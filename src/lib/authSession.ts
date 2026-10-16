@@ -24,11 +24,14 @@ export interface SessionCookieSpec {
   maxAgeSeconds: number;
 }
 
-// Shared cookie hardening: httpOnly, Secure, SameSite=Strict, Path=/.
+// Shared cookie hardening: httpOnly, SameSite=Strict, Path=/. Secure is enabled
+// in production (HTTPS) but disabled in development so the panel can be reached
+// over plain HTTP on a LAN IP (e.g. a phone at http://192.168.x.x:3001), where
+// browsers drop Secure cookies. Production always keeps Secure.
 export function cookieOptions(maxAgeSeconds: number) {
   return {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict" as const,
     path: "/",
     maxAge: maxAgeSeconds,

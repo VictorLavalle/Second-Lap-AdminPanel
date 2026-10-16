@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   REFRESH_COOKIE,
   SESSION_COOKIE,
@@ -13,14 +13,27 @@ beforeEach(() => {
 });
 
 describe("cookieOptions", () => {
-  it("hardens cookies: httpOnly, secure, strict, path=/", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("always hardens cookies: httpOnly, strict, path=/", () => {
     const options = cookieOptions(900);
 
     expect(options.httpOnly).toBe(true);
-    expect(options.secure).toBe(true);
     expect(options.sameSite).toBe("strict");
     expect(options.path).toBe("/");
     expect(options.maxAge).toBe(900);
+  });
+
+  it("sets Secure in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(cookieOptions(900).secure).toBe(true);
+  });
+
+  it("omits Secure outside production so dev works over plain HTTP on a LAN IP", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    expect(cookieOptions(900).secure).toBe(false);
   });
 });
 
