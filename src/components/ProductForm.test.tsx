@@ -78,6 +78,16 @@ describe("ProductForm (create)", () => {
     expect(form?.getAttribute("method")).toBe("post");
   });
 
+  it("shows a formatted price preview as the amount is typed", () => {
+    render(<ProductForm categories={categories} />);
+
+    fireEvent.change(screen.getByLabelText("Precio (MXN)"), {
+      target: { value: "1500" },
+    });
+
+    expect(screen.getByText(/1,500\.00/)).toBeInTheDocument();
+  });
+
   it("shows validation errors and does not submit when invalid", () => {
     render(<ProductForm categories={categories} />);
 
