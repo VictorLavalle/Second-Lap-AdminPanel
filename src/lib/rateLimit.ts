@@ -43,6 +43,33 @@ export function checkRateLimit(
   return { allowed: true, retryAfterSeconds: 0 };
 }
 
+// Evaluates a per-key limit and a shared global limit together. Returns blocked
+// if EITHER is exceeded, with the larger Retry-After. The global cap bounds the
+// total request rate so forging a fresh X-Forwarded-For per request (which
+// would otherwise open a new per-key bucket each time) cannot bypass the
+// brute-force defense.
+export function checkRateLimitWithGlobal(
+  key: string,
+  perKey: RateLimitOptions,
+  globalKey: string,
+  global: RateLimitOptions,
+  now: number = Date.now(),
+): RateLimitResult {
+  const perKeyResult = checkRateLimit(key, perKey, now);
+  const globalResult = checkRateLimit(globalKey, global, now);
+
+  if (perKeyResult.allowed && globalResult.allowed) {
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+  return {
+    allowed: false,
+    retryAfterSeconds: Math.max(
+      perKeyResult.retryAfterSeconds,
+      globalResult.retryAfterSeconds,
+    ),
+  };
+}
+
 // Test-only hook to reset state between runs.
 export function clearRateLimits(): void {
   windows.clear();

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiClient, encodeBasicCredentials } from "@/lib/apiClient";
 import { ApiRequestError } from "@/lib/apiError";
-import { checkRateLimit } from "@/lib/rateLimit";
+import { checkRateLimitWithGlobal } from "@/lib/rateLimit";
 import { clientKey } from "@/lib/clientKey";
 import { cookieOptions, createSessionCookies } from "@/lib/authSession";
 
@@ -10,6 +10,7 @@ import { cookieOptions, createSessionCookies } from "@/lib/authSession";
 export const runtime = "nodejs";
 
 const LOGIN_RATE_LIMIT = { limit: 5, windowMs: 60_000 };
+const LOGIN_GLOBAL_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 interface LoginBody {
   username?: unknown;
@@ -29,7 +30,12 @@ function readCredentials(body: LoginBody): { username: string; password: string 
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const limit = checkRateLimit(`login:${clientKey(request)}`, LOGIN_RATE_LIMIT);
+  const limit = checkRateLimitWithGlobal(
+    `login:${clientKey(request)}`,
+    LOGIN_RATE_LIMIT,
+    "global:login",
+    LOGIN_GLOBAL_RATE_LIMIT,
+  );
   if (!limit.allowed) {
     return rateLimited(limit.retryAfterSeconds);
   }

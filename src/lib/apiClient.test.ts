@@ -46,6 +46,32 @@ describe("encodeBasicCredentials", () => {
   });
 });
 
+describe("base URL resolution", () => {
+  it("fails fast when BACKEND_URL is missing in production", async () => {
+    fetchMock.mockResolvedValue(jsonOk([]));
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("BACKEND_URL", "");
+
+    await expect(apiClient.listCategories()).rejects.toThrow(
+      /BACKEND_URL must be set in production/,
+    );
+
+    vi.unstubAllEnvs();
+  });
+
+  it("uses the configured BACKEND_URL when present", async () => {
+    fetchMock.mockResolvedValue(jsonOk([]));
+    vi.stubEnv("BACKEND_URL", "https://api.example.com/api/v1");
+
+    await apiClient.listCategories();
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://api.example.com/api/v1/categories");
+
+    vi.unstubAllEnvs();
+  });
+});
+
 describe("apiClient request wiring", () => {
   it("sends the Basic auth header and no-store cache for authed calls", async () => {
     fetchMock.mockResolvedValue(jsonOk({ username: "admin" }));

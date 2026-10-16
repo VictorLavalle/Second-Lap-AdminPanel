@@ -6,10 +6,10 @@ function requestWith(headers: Record<string, string>): Request {
 }
 
 describe("clientKey", () => {
-  it("uses the first x-forwarded-for entry", () => {
-    expect(clientKey(requestWith({ "x-forwarded-for": "1.1.1.1, 2.2.2.2" }))).toBe(
-      "1.1.1.1",
-    );
+  it("uses the last (closest) hop of x-forwarded-for, not the client-controlled first", () => {
+    expect(
+      clientKey(requestWith({ "x-forwarded-for": "1.1.1.1, 2.2.2.2" })),
+    ).toBe("2.2.2.2");
   });
 
   it("falls back to x-real-ip then a constant", () => {

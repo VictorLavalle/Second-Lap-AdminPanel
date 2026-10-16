@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkRateLimit } from "@/lib/rateLimit";
+import { checkRateLimitWithGlobal } from "@/lib/rateLimit";
 import { clientKey } from "@/lib/clientKey";
 import {
   REFRESH_COOKIE,
@@ -12,11 +12,14 @@ import { readCookie } from "@/lib/cookies";
 export const runtime = "nodejs";
 
 const REFRESH_RATE_LIMIT = { limit: 20, windowMs: 60_000 };
+const REFRESH_GLOBAL_RATE_LIMIT = { limit: 60, windowMs: 60_000 };
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const limit = checkRateLimit(
+  const limit = checkRateLimitWithGlobal(
     `refresh:${clientKey(request)}`,
     REFRESH_RATE_LIMIT,
+    "global:refresh",
+    REFRESH_GLOBAL_RATE_LIMIT,
   );
   if (!limit.allowed) {
     return NextResponse.json(
