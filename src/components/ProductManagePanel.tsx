@@ -7,7 +7,6 @@ import {
   ACCEPTED_IMAGE_TYPES,
   validateImages,
 } from "@/lib/imageUpload";
-import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const PRODUCT_STATUSES: ProductStatus[] = [
@@ -222,7 +221,6 @@ export function ProductManagePanel({ product }: Readonly<{ product: Product }>) 
           Estado
         </h2>
         <div className="flex items-center gap-3">
-          <StatusBadge status={status} />
           <label htmlFor="status" className="sr-only">
             Cambiar estado
           </label>
