@@ -66,8 +66,19 @@ describe("ProductManagePanel images", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/formato no permitido/i);
   });
 
-  it("uploads valid files and refreshes", async () => {
-    fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
+  it("uploads valid files, shows a success message and the new image", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ...product,
+          images: [
+            "http://localhost:8080/img/a.jpg",
+            "/uploads/new.jpg",
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
     render(<ProductManagePanel product={product} />);
 
     fireEvent.change(screen.getByLabelText(/agregar imágenes/i), {
@@ -81,6 +92,7 @@ describe("ProductManagePanel images", () => {
         expect.objectContaining({ method: "POST" }),
       ),
     );
+    expect(await screen.findByText("Imágenes subidas ✓")).toBeInTheDocument();
     await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
