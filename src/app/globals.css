@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+:root {
+  /* Warm palette shared with the Second Lap storefront for visual consistency. */
+  --color-ink: #1a1a1a;
+  --color-ink-soft: #4a4a4a;
+  --color-canvas: #f7f4f1;
+  --color-surface: #ffffff;
+  --color-accent: #e9835a;
+  --color-accent-soft: #f4845f;
+  --color-price: #b84a26;
+  --color-gold: #946b3c;
+  --color-text: #1a1a1a;
+  --color-muted: #66605a;
+  --color-line: #e5e0db;
+
+  --color-available: #546942;
+  --color-reserved: #7d5a2e;
+  --color-sold: #66605a;
+
+  --color-danger: #b84a26;
+}
+
+@theme inline {
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-canvas: var(--color-canvas);
+  --color-surface: var(--color-surface);
+  --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-price: var(--color-price);
+  --color-gold: var(--color-gold);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-muted);
+  --color-line: var(--color-line);
+  --color-available: var(--color-available);
+  --color-reserved: var(--color-reserved);
+  --color-sold: var(--color-sold);
+  --color-danger: var(--color-danger);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-text);
+  font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+}
+
+/* Shimmer para skeleton loaders: barrido suave sobre un tono de línea. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-line);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--color-surface) 55%, transparent) 50%,
+    transparent 100%
+  );
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
