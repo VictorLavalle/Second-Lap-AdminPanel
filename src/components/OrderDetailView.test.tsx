@@ -53,8 +53,8 @@ function order(overrides: Partial<Order> = {}): Order {
     deliveredAt: null,
     cancelledAt: null,
     events: [
-      { fromStatus: null, toStatus: "pendiente", occurredAt: "2026-01-15T18:30:00.000Z" },
-      { fromStatus: "pendiente", toStatus: "confirmado", occurredAt: "2026-01-15T19:00:00.000Z" },
+      { fromStatus: null, toStatus: "pendiente", occurredAt: "2026-01-15T18:30:00.000Z", actor: null },
+      { fromStatus: "pendiente", toStatus: "confirmado", occurredAt: "2026-01-15T19:00:00.000Z", actor: "ana.admin" },
     ],
     storeWhatsapp: "52999",
     ...overrides,
@@ -119,6 +119,39 @@ describe("OrderDetailView content", () => {
     const historial = screen.getByText("Historial").closest("section");
     expect(historial?.textContent).toContain("Creado");
     expect(historial?.textContent).toContain("Confirmado");
+  });
+
+  it("shows the actor on a transition event but omits attribution on creation", () => {
+    currentState = { status: "ready", data: order() };
+    render(<OrderDetailView orderId="o1" />);
+
+    const historial = screen.getByText("Historial").closest("section");
+    // Transition event carries the admin username.
+    expect(historial?.textContent).toContain("por ana.admin");
+    // Creation event has no actor, so "por null" must never appear.
+    expect(historial?.textContent).not.toContain("por null");
+  });
+
+  it("renders no actor attribution when the only event is the creation event", () => {
+    currentState = {
+      status: "ready",
+      data: order({
+        status: "pendiente",
+        confirmedAt: null,
+        events: [
+          {
+            fromStatus: null,
+            toStatus: "pendiente",
+            occurredAt: "2026-01-15T18:30:00.000Z",
+            actor: null,
+          },
+        ],
+      }),
+    };
+    render(<OrderDetailView orderId="o1" />);
+
+    const historial = screen.getByText("Historial").closest("section");
+    expect(historial?.textContent).not.toContain("por ");
   });
 });
 

@@ -43,7 +43,7 @@ function pendingOrder(): Order {
     deliveredAt: null,
     cancelledAt: null,
     events: [
-      { fromStatus: null, toStatus: "pendiente", occurredAt: "2026-01-15T18:30:00.000Z" },
+      { fromStatus: null, toStatus: "pendiente", occurredAt: "2026-01-15T18:30:00.000Z", actor: null },
     ],
     storeWhatsapp: "52999",
   };

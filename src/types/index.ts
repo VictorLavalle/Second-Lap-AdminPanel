@@ -81,6 +81,9 @@ export interface OrderEvent {
   fromStatus: OrderStatus | null;
   toStatus: OrderStatus;
   occurredAt: string;
+  // Username of the admin who made the transition; null for the creation event
+  // (done by the customer, no admin).
+  actor: string | null;
 }
 
 export interface Order {

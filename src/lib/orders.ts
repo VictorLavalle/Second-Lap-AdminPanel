@@ -105,6 +105,17 @@ export function eventLabel(fromStatus: OrderStatus | null, toStatus: OrderStatus
   return ORDER_STATUS_LABELS[toStatus];
 }
 
+// Actor attribution for a timeline event: "por <actor>" when an admin performed
+// the transition, or null when there is no actor (the creation event, done by
+// the customer). Returning null — never the string "por null" — lets the view
+// omit the attribution entirely.
+export function eventActorLabel(actor: string | null): string | null {
+  if (!actor) {
+    return null;
+  }
+  return `por ${actor}`;
+}
+
 // Builds a wa.me link from the store WhatsApp number returned on the order.
 // Strips any non-digit characters so "+52 999…" and "5299…" both work.
 export function buildWhatsappLink(
