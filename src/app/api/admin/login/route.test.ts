@@ -34,7 +34,7 @@ describe("POST /api/admin/login", () => {
     expect(response.cookies.get(REFRESH_COOKIE)?.value).toBeTruthy();
     const sessionCookie = response.cookies.get(SESSION_COOKIE);
     expect(sessionCookie?.httpOnly).toBe(true);
-    expect(sessionCookie?.sameSite).toBe("strict");
+    expect(sessionCookie?.sameSite).toBe("lax");
   });
 
   it("returns a generic 401 on invalid credentials", async () => {

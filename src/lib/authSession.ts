@@ -24,15 +24,21 @@ export interface SessionCookieSpec {
   maxAgeSeconds: number;
 }
 
-// Shared cookie hardening: httpOnly, SameSite=Strict, Path=/. Secure is enabled
+// Shared cookie hardening: httpOnly, SameSite=Lax, Path=/. Secure is enabled
 // in production (HTTPS) but disabled in development so the panel can be reached
 // over plain HTTP on a LAN IP (e.g. a phone at http://192.168.x.x:3001), where
 // browsers drop Secure cookies. Production always keeps Secure.
+//
+// SameSite=Lax (not Strict): the cookie must ride the top-level GET navigation
+// to /productos that follows the login POST. Strict withholds the cookie on
+// that navigation in some mobile browsers, so the proxy sees no session and
+// bounces back to /login. Lax still blocks cross-site subrequests (CSRF), which
+// is the protection that matters here.
 export function cookieOptions(maxAgeSeconds: number) {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict" as const,
+    sameSite: "lax" as const,
     path: "/",
     maxAge: maxAgeSeconds,
   };
