@@ -17,11 +17,11 @@ describe("cookieOptions", () => {
     vi.unstubAllEnvs();
   });
 
-  it("always hardens cookies: httpOnly, strict, path=/", () => {
+  it("always hardens cookies: httpOnly, lax, path=/", () => {
     const options = cookieOptions(900);
 
     expect(options.httpOnly).toBe(true);
-    expect(options.sameSite).toBe("strict");
+    expect(options.sameSite).toBe("lax");
     expect(options.path).toBe("/");
     expect(options.maxAge).toBe(900);
   });
