@@ -31,10 +31,10 @@ export function buildContentSecurityPolicy({
 }: CspOptions): string {
   const connectSrc = isDev ? `'self' ws: ${backendOrigin}` : "'self'";
 
-  return [
+  const directives = [
     "default-src 'none'",
     `script-src ${scriptSrcDirective(isDev, nonce)}`,
-    "style-src 'self' 'unsafe-inline'",
+    `style-src ${styleSrcDirective(isDev, nonce)}`,
     `img-src 'self' data: blob: ${backendOrigin}`,
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
@@ -42,9 +42,21 @@ export function buildContentSecurityPolicy({
     "base-uri 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-  ]
-    .join("; ")
-    .concat(";");
+  ];
+
+  // In production, style-src uses a nonce and no 'unsafe-inline', which also
+  // blocks inline style ATTRIBUTES (e.g. the `style="color:transparent"` the
+  // Next <Image> component emits) — nonces only authorize <style> elements, not
+  // attributes. We scope those to style-src-attr 'unsafe-inline': it permits the
+  // unavoidable framework-emitted style attributes while keeping style-src
+  // strict against injected <style> blocks (the real XSS vector). Dev already
+  // allows 'unsafe-inline' on style-src, so no style-src-attr is needed there.
+  const styleAttr = styleSrcAttrDirective(isDev, nonce);
+  if (styleAttr) {
+    directives.push(styleAttr);
+  }
+
+  return directives.join("; ").concat(";");
 }
 
 function scriptSrcDirective(isDev: boolean, nonce?: string): string {
@@ -58,6 +70,27 @@ function scriptSrcDirective(isDev: boolean, nonce?: string): string {
   // Production fallback when no nonce is available (should not happen once the
   // middleware supplies one): keep the previous, looser behavior.
   return "'self' 'unsafe-inline'";
+}
+
+function styleSrcDirective(isDev: boolean, nonce?: string): string {
+  if (isDev) {
+    // Turbopack injects runtime <style> tags during HMR.
+    return "'self' 'unsafe-inline'";
+  }
+  if (nonce) {
+    return `'self' 'nonce-${nonce}'`;
+  }
+  return "'self' 'unsafe-inline'";
+}
+
+// Only emitted in production with a strict style-src: permits inline style
+// attributes (not <style> elements) so framework-emitted attributes do not
+// trip CSP. Returns null when not needed (dev, or no nonce / loose style-src).
+function styleSrcAttrDirective(isDev: boolean, nonce?: string): string | null {
+  if (!isDev && nonce) {
+    return "style-src-attr 'unsafe-inline'";
+  }
+  return null;
 }
 
 // Non-CSP hardening headers that are identical on every response. The CSP is set

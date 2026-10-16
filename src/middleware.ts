@@ -30,19 +30,24 @@ function backendOrigin(): string {
 }
 
 // Builds a NextResponse that forwards the nonce to the app and carries the CSP.
+// The CSP is set on BOTH the request headers (so Next.js extracts the nonce and
+// applies it to its framework scripts/styles during SSR) and the response
+// headers (so the browser enforces it). This dual-set is required by Next's
+// nonce mechanism — a response-only CSP leaves scripts un-nonced and
+// 'strict-dynamic' then blocks them.
 function responseWithCsp(request: NextRequest, nonce: string): NextResponse {
+  const csp = buildContentSecurityPolicy({
+    isDev: isDev(),
+    backendOrigin: backendOrigin(),
+    nonce,
+  });
+
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(NONCE_HEADER, nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
-  response.headers.set(
-    "Content-Security-Policy",
-    buildContentSecurityPolicy({
-      isDev: isDev(),
-      backendOrigin: backendOrigin(),
-      nonce,
-    }),
-  );
+  response.headers.set("Content-Security-Policy", csp);
   return response;
 }
 
