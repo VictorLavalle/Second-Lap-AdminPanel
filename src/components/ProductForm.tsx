@@ -4,6 +4,7 @@ import { useMemo, useState, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/types";
 import { sanitizeMultiline, sanitizeText } from "@/lib/sanitize";
+import { formatPriceWithCents } from "@/lib/format";
 import {
   PRODUCT_CONDITIONS,
   toProductRequest,
@@ -45,6 +46,13 @@ export function ProductForm({
     () => (isEdit ? `/api/admin/products/${product.id}` : "/api/admin/products"),
     [isEdit, product],
   );
+
+  // Live formatted preview of the price being typed. The raw input stays
+  // numeric (submit/validation unaffected); this only mirrors it as currency.
+  const pricePreview = useMemo(() => {
+    const amount = Number.parseFloat(values.price);
+    return Number.isFinite(amount) ? formatPriceWithCents(amount) : null;
+  }, [values.price]);
 
   function update<K extends keyof ProductFormValues>(
     key: K,
@@ -129,6 +137,11 @@ export function ProductForm({
         inputMode="numeric"
         onChange={(value) => update("price", value.replace(/[^0-9.]/g, ""))}
       />
+      {pricePreview ? (
+        <p className="-mt-1 text-sm text-[var(--color-muted)]">
+          Se mostrará como <span className="font-medium">{pricePreview}</span>
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="categoryId" className="text-sm font-medium">
