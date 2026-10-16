@@ -53,6 +53,38 @@ describe("buildContentSecurityPolicy", () => {
     expect(csp).not.toContain("'nonce-");
     expect(csp).toContain(`connect-src 'self' ws: ${backendOrigin}`);
   });
+
+  it("uses a nonce for style-src and drops unsafe-inline in production", () => {
+    const csp = buildContentSecurityPolicy({
+      isDev: false,
+      backendOrigin,
+      nonce: "abc123",
+    });
+
+    expect(csp).toContain("style-src 'self' 'nonce-abc123'");
+    expect(csp).not.toContain("style-src 'self' 'unsafe-inline'");
+    // Inline style ATTRIBUTES (framework-emitted) are scoped to style-src-attr,
+    // keeping style-src strict against injected <style> blocks.
+    expect(csp).toContain("style-src-attr 'unsafe-inline'");
+  });
+
+  it("keeps unsafe-inline on style-src and omits style-src-attr in development", () => {
+    const csp = buildContentSecurityPolicy({
+      isDev: true,
+      backendOrigin,
+      nonce: "ignored-in-dev",
+    });
+
+    expect(csp).toContain("style-src 'self' 'unsafe-inline'");
+    expect(csp).not.toContain("style-src-attr");
+  });
+
+  it("falls back to unsafe-inline on style-src in prod when no nonce is supplied", () => {
+    const csp = buildContentSecurityPolicy({ isDev: false, backendOrigin });
+
+    expect(csp).toContain("style-src 'self' 'unsafe-inline'");
+    expect(csp).not.toContain("style-src-attr");
+  });
 });
 
 describe("buildStaticSecurityHeaders", () => {

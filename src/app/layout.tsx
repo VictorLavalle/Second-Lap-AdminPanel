@@ -15,6 +15,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Nonce-based CSP requires dynamic rendering: Next.js injects the per-request
+// nonce into its scripts/styles during SSR, which cannot happen for statically
+// prerendered pages. Acceptable for this authenticated, single-admin tool (no
+// CDN caching of pages is expected).
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
