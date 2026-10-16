@@ -38,3 +38,23 @@ describe("parseOrderListParams", () => {
     expect(parseOrderListParams(`${base}?sort=price,asc`).sort).toBeUndefined();
   });
 });
+
+describe("pagination params", () => {
+  it("parses a valid page and allowed size", () => {
+    const p = parseProductListParams(`${base}?page=3&size=50`);
+    expect(p.page).toBe(3);
+    expect(p.size).toBe(50);
+  });
+
+  it("coerces a negative page to 0 and drops a disallowed size", () => {
+    const p = parseProductListParams(`${base}?page=-5&size=999`);
+    expect(p.page).toBe(0);
+    expect(p.size).toBeUndefined();
+  });
+
+  it("leaves page/size undefined when absent", () => {
+    const p = parseOrderListParams(base);
+    expect(p.page).toBeUndefined();
+    expect(p.size).toBeUndefined();
+  });
+});

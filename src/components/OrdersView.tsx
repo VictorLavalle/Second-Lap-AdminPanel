@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Order, OrderStatus } from "@/types";
+import type { Order, OrderStatus, Page } from "@/types";
 import { useAdminResource } from "@/lib/useAdminResource";
 import { useOrderAction } from "@/lib/useOrderAction";
 import { actionDialogCopy } from "@/lib/orders";
 import { OrderCard } from "@/components/OrderCard";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { Pagination, type PageSize } from "@/components/Pagination";
 
 type StatusFilter = OrderStatus | "all";
 
@@ -85,24 +86,43 @@ function Loading() {
 export function OrdersView() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<string>("createdAt,desc");
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState<PageSize>(25);
 
   const path = useMemo(() => {
-    const query = new URLSearchParams({ sort });
+    const query = new URLSearchParams({
+      sort,
+      page: String(page),
+      size: String(size),
+    });
     if (status !== "all") {
       query.set("status", status);
     }
     return `/api/admin/orders?${query.toString()}`;
-  }, [status, sort]);
+  }, [status, sort, page, size]);
 
-  const { state, reload } = useAdminResource<Order[]>(path);
+  const { state, reload } = useAdminResource<Page<Order>>(path);
   const action = useOrderAction(reload);
+
+  function changeStatus(next: StatusFilter) {
+    setStatus(next);
+    setPage(0);
+  }
+  function changeSort(next: string) {
+    setSort(next);
+    setPage(0);
+  }
+  function changeSize(next: PageSize) {
+    setSize(next);
+    setPage(0);
+  }
 
   const controls = (
     <Controls
       status={status}
       sort={sort}
-      onStatus={setStatus}
-      onSort={setSort}
+      onStatus={changeStatus}
+      onSort={changeSort}
     />
   );
 
@@ -135,6 +155,7 @@ export function OrdersView() {
     );
   }
 
+  const result = state.data;
   const copy = action.pending ? actionDialogCopy(action.pending.kind) : null;
 
   return (
@@ -147,12 +168,12 @@ export function OrdersView() {
         </p>
       ) : null}
 
-      {state.data.length === 0 ? (
+      {result.content.length === 0 ? (
         <p className="rounded-md border border-dashed border-[var(--color-line)] px-4 py-10 text-center text-[var(--color-muted)]">
           No hay pedidos para este filtro.
         </p>
       ) : (
-        state.data.map((order) => (
+        result.content.map((order) => (
           <OrderCard
             key={order.id}
             order={order}
@@ -161,6 +182,16 @@ export function OrdersView() {
           />
         ))
       )}
+
+      <Pagination
+        page={result.number}
+        totalPages={result.totalPages}
+        totalElements={result.totalElements}
+        size={size}
+        onPage={setPage}
+        onSize={changeSize}
+        busy={action.busy}
+      />
 
       <ConfirmDialog
         open={copy !== null}

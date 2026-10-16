@@ -270,6 +270,33 @@ describe("apiClient admin methods", () => {
     expect(url).not.toContain("?");
   });
 
+  it("lists products from the paginated admin endpoint with page/size", async () => {
+    fetchMock.mockResolvedValue(
+      jsonOk({
+        content: [sampleProduct],
+        totalElements: 1,
+        totalPages: 1,
+        number: 0,
+        size: 10,
+      }),
+    );
+
+    await apiClient.listProductsAdmin(credentials, {
+      status: "disponible",
+      sort: "price,asc",
+      page: 2,
+      size: 10,
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/admin/products?");
+    expect(url).toContain("status=disponible");
+    expect(url).toContain("sort=price%2Casc");
+    expect(url).toContain("page=2");
+    expect(url).toContain("size=10");
+    expect(init.headers.Authorization).toBe(`Basic ${credentials}`);
+  });
+
   it("gets a single product by id", async () => {
     fetchMock.mockResolvedValue(jsonOk(sampleProduct));
 

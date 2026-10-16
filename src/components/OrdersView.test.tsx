@@ -7,11 +7,21 @@ import {
   waitFor,
 } from "@testing-library/react";
 import type { ResourceState } from "@/lib/useAdminResource";
-import type { Order } from "@/types";
+import type { Order, Page } from "@/types";
 
 const replace = vi.fn();
 const reload = vi.fn();
-let currentState: ResourceState<Order[]>;
+let currentState: ResourceState<Page<Order>>;
+
+function pageOf(content: Order[]): Page<Order> {
+  return {
+    content,
+    totalElements: content.length,
+    totalPages: content.length === 0 ? 0 : 1,
+    number: 0,
+    size: 25,
+  };
+}
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace, refresh: vi.fn() }),
@@ -69,7 +79,7 @@ describe("OrdersView states", () => {
   });
 
   it("shows empty", () => {
-    currentState = { status: "ready", data: [] };
+    currentState = { status: "ready", data: pageOf([]) };
     render(<OrdersView />);
     expect(screen.getByText("No hay pedidos para este filtro.")).toBeInTheDocument();
   });
@@ -85,7 +95,7 @@ describe("OrdersView states", () => {
 
 describe("OrdersView transitions", () => {
   it("confirms through the dialog then reloads", async () => {
-    currentState = { status: "ready", data: [pendingOrder()] };
+    currentState = { status: "ready", data: pageOf([pendingOrder()]) };
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
     render(<OrdersView />);
 
@@ -104,7 +114,7 @@ describe("OrdersView transitions", () => {
   });
 
   it("shows the backend 409 message and reloads", async () => {
-    currentState = { status: "ready", data: [pendingOrder()] };
+    currentState = { status: "ready", data: pageOf([pendingOrder()]) };
     fetchMock.mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -126,7 +136,7 @@ describe("OrdersView transitions", () => {
   });
 
   it("shows a generic message with the correlation ref on a 5xx", async () => {
-    currentState = { status: "ready", data: [pendingOrder()] };
+    currentState = { status: "ready", data: pageOf([pendingOrder()]) };
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ error: "server_error", ref: "corr-abc" }), {
         status: 500,
@@ -143,7 +153,7 @@ describe("OrdersView transitions", () => {
   });
 
   it("redirects to /login on 401", async () => {
-    currentState = { status: "ready", data: [pendingOrder()] };
+    currentState = { status: "ready", data: pageOf([pendingOrder()]) };
     fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
     render(<OrdersView />);
 

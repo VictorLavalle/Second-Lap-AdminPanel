@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Product, ProductStatus } from "@/types";
+import type { Page, Product, ProductStatus } from "@/types";
 import { useAdminResource } from "@/lib/useAdminResource";
 import { ProductsTable } from "@/components/ProductsTable";
+import { Pagination, type PageSize } from "@/components/Pagination";
 
 function LoadingState() {
   return (
@@ -109,23 +110,44 @@ function Controls({
 export function ProductsView() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<string>("createdAt,desc");
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState<PageSize>(25);
 
   const path = useMemo(() => {
-    const query = new URLSearchParams({ sort });
+    const query = new URLSearchParams({
+      sort,
+      page: String(page),
+      size: String(size),
+    });
     if (status !== "all") {
       query.set("status", status);
     }
     return `/api/admin/products?${query.toString()}`;
-  }, [status, sort]);
+  }, [status, sort, page, size]);
 
-  const { state, reload } = useAdminResource<Product[]>(path);
+  const { state, reload } = useAdminResource<Page<Product>>(path);
+
+  // Changing a filter/sort/size resets to the first page so the user never
+  // lands on an out-of-range page.
+  function changeStatus(next: StatusFilter) {
+    setStatus(next);
+    setPage(0);
+  }
+  function changeSort(next: string) {
+    setSort(next);
+    setPage(0);
+  }
+  function changeSize(next: PageSize) {
+    setSize(next);
+    setPage(0);
+  }
 
   const controls = (
     <Controls
       status={status}
       sort={sort}
-      onStatus={setStatus}
-      onSort={setSort}
+      onStatus={changeStatus}
+      onSort={changeSort}
     />
   );
 
@@ -145,14 +167,24 @@ export function ProductsView() {
       </div>
     );
   }
+
+  const result = state.data;
   return (
     <div className="flex flex-col gap-4">
       {controls}
-      {state.data.length === 0 ? (
+      {result.content.length === 0 ? (
         <EmptyState />
       ) : (
-        <ProductsTable products={state.data} />
+        <ProductsTable products={result.content} />
       )}
+      <Pagination
+        page={result.number}
+        totalPages={result.totalPages}
+        totalElements={result.totalElements}
+        size={size}
+        onPage={setPage}
+        onSize={changeSize}
+      />
     </div>
   );
 }

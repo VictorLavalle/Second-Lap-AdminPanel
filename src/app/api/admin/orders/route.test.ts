@@ -46,13 +46,19 @@ afterEach(() => {
 });
 
 describe("GET /api/admin/orders", () => {
-  it("returns orders for an authenticated admin", async () => {
-    vi.spyOn(apiClient, "listOrders").mockResolvedValue([sampleOrder]);
+  it("returns a page of orders for an authenticated admin", async () => {
+    vi.spyOn(apiClient, "listOrders").mockResolvedValue({
+      content: [sampleOrder],
+      totalElements: 1,
+      totalPages: 1,
+      number: 0,
+      size: 25,
+    });
 
     const response = await GET(await authed());
     expect(response.status).toBe(200);
-    const body = (await response.json()) as Order[];
-    expect(body).toHaveLength(1);
+    const body = (await response.json()) as { content: Order[] };
+    expect(body.content).toHaveLength(1);
   });
 
   it("returns 401 without a session", async () => {

@@ -4,6 +4,7 @@ import type {
   Category,
   Order,
   OrderStatus,
+  Page,
   Product,
   ProductStatus,
 } from "@/types";
@@ -57,15 +58,20 @@ interface RequestOptions {
 
 // Sort is the backend's "property,direction" form (e.g. "createdAt,desc"). The
 // backend whitelists properties and silently falls back to its default for
-// anything unknown, so no client-side validation is needed here.
+// anything unknown, so no client-side validation is needed here. page is
+// 0-based; size is clamped by the backend to its allow-list.
 export interface ProductListParams {
   status?: ProductStatus;
   sort?: string;
+  page?: number;
+  size?: number;
 }
 
 export interface OrderListParams {
   status?: OrderStatus;
   sort?: string;
+  page?: number;
+  size?: number;
 }
 
 function buildListQuery(
@@ -80,6 +86,12 @@ function buildListQuery(
   }
   if (params.sort) {
     query.set("sort", params.sort);
+  }
+  if (params.page !== undefined) {
+    query.set("page", String(params.page));
+  }
+  if (params.size !== undefined) {
+    query.set("size", String(params.size));
   }
   const serialized = query.toString();
   return serialized ? `?${serialized}` : "";
@@ -134,6 +146,17 @@ export const apiClient = {
 
   listProducts(params?: ProductListParams): Promise<Product[]> {
     return request<Product[]>(`/products${buildListQuery(params)}`);
+  },
+
+  // Paginated admin listing (gated server-side). Distinct from the public
+  // listProducts above, which the storefront consumes as a flat array.
+  listProductsAdmin(
+    credentials: string,
+    params?: ProductListParams,
+  ): Promise<Page<Product>> {
+    return request<Page<Product>>(`/admin/products${buildListQuery(params)}`, {
+      credentials,
+    });
   },
 
   getProduct(id: string): Promise<Product> {
@@ -197,8 +220,8 @@ export const apiClient = {
   listOrders(
     credentials: string,
     params?: OrderListParams,
-  ): Promise<Order[]> {
-    return request<Order[]>(`/admin/orders${buildListQuery(params)}`, {
+  ): Promise<Page<Order>> {
+    return request<Page<Order>>(`/admin/orders${buildListQuery(params)}`, {
       credentials,
     });
   },

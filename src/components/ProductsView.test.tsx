@@ -1,16 +1,26 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ResourceState } from "@/lib/useAdminResource";
-import type { Product } from "@/types";
+import type { Page, Product } from "@/types";
 
 const reload = vi.fn();
-let currentState: ResourceState<Product[]>;
+let currentState: ResourceState<Page<Product>>;
 
 vi.mock("@/lib/useAdminResource", () => ({
   useAdminResource: () => ({ state: currentState, reload }),
 }));
 
 import { ProductsView } from "./ProductsView";
+
+function pageOf(content: Product[]): Page<Product> {
+  return {
+    content,
+    totalElements: content.length,
+    totalPages: content.length === 0 ? 0 : 1,
+    number: 0,
+    size: 25,
+  };
+}
 
 afterEach(() => {
   cleanup();
@@ -44,19 +54,19 @@ describe("ProductsView", () => {
   });
 
   it("shows the empty state when there are no products", () => {
-    currentState = { status: "ready", data: [] };
+    currentState = { status: "ready", data: pageOf([]) };
     render(<ProductsView />);
     expect(screen.getByText("No hay productos todavía.")).toBeInTheDocument();
   });
 
   it("renders the table when products are present", () => {
-    currentState = { status: "ready", data: [sampleProduct()] };
+    currentState = { status: "ready", data: pageOf([sampleProduct()]) };
     render(<ProductsView />);
     expect(screen.getByText("Camisa")).toBeInTheDocument();
   });
 
   it("renders status and sort controls", () => {
-    currentState = { status: "ready", data: [sampleProduct()] };
+    currentState = { status: "ready", data: pageOf([sampleProduct()]) };
     render(<ProductsView />);
     expect(
       screen.getByRole("option", { name: "Todos los estados" }),

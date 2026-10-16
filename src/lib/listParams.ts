@@ -35,6 +35,26 @@ function parseSort(raw: string | null, allowedProps: Set<string>): string | unde
   return `${prop.trim()},${direction}`;
 }
 
+const ALLOWED_SIZES = new Set([10, 25, 50, 100]);
+
+// Mirrors the backend's clamp: unknown size -> undefined (backend applies its
+// default 25), negative page -> 0. Keeps the forwarded query clean.
+function parsePage(raw: string | null): number | undefined {
+  if (raw === null) {
+    return undefined;
+  }
+  const page = Number.parseInt(raw, 10);
+  return Number.isInteger(page) && page >= 0 ? page : 0;
+}
+
+function parseSize(raw: string | null): number | undefined {
+  if (raw === null) {
+    return undefined;
+  }
+  const size = Number.parseInt(raw, 10);
+  return ALLOWED_SIZES.has(size) ? size : undefined;
+}
+
 export function parseProductListParams(url: string): ProductListParams {
   const params = new URL(url).searchParams;
   const status = params.get("status");
@@ -43,6 +63,8 @@ export function parseProductListParams(url: string): ProductListParams {
       ? (status as ProductStatus)
       : undefined,
     sort: parseSort(params.get("sort"), PRODUCT_SORT_PROPS),
+    page: parsePage(params.get("page")),
+    size: parseSize(params.get("size")),
   };
 }
 
@@ -54,5 +76,7 @@ export function parseOrderListParams(url: string): OrderListParams {
       ? (status as OrderStatus)
       : undefined,
     sort: parseSort(params.get("sort"), ORDER_SORT_PROPS),
+    page: parsePage(params.get("page")),
+    size: parseSize(params.get("size")),
   };
 }

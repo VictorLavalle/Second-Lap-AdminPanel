@@ -11,10 +11,9 @@ import type { AdminProductRequest } from "@/types";
 
 export const runtime = "nodejs";
 
-// Lists products for the admin table. Products are read via the public catalog
-// endpoint, but the request is gated by a valid admin session so the panel only
-// serves data to an authenticated admin (and transparently refreshes the
-// session when needed). Status/sort filters are forwarded to the backend.
+// Lists products for the admin table via the paginated admin endpoint, gated by
+// a valid admin session (transparently refreshing it when needed). Status, sort
+// and pagination are forwarded to the backend.
 export async function GET(request: Request): Promise<NextResponse> {
   const resolved = await resolveAdminCredentials(request.headers.get("cookie"));
   if (!resolved) {
@@ -22,7 +21,8 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const products = await apiClient.listProducts(
+    const products = await apiClient.listProductsAdmin(
+      resolved.credentials,
       parseProductListParams(request.url),
     );
     return withRefreshedCookies(
