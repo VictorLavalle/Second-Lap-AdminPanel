@@ -203,6 +203,39 @@ describe("ProductForm (create)", () => {
   });
 });
 
+describe("ProductForm (create) discard confirmation", () => {
+  it("navigates away immediately when Cancel is clicked on a pristine form", () => {
+    render(<ProductForm categories={categories} />);
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(replace).toHaveBeenCalledWith("/productos");
+  });
+
+  it("asks for confirmation before discarding a dirty form", () => {
+    render(<ProductForm categories={categories} />);
+    fireEvent.change(screen.getByLabelText("Nombre"), {
+      target: { value: "Chamarra" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    // The confirm dialog appears and no navigation happened yet.
+    expect(screen.getByText("Descartar producto")).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("discards and navigates when the discard is confirmed", () => {
+    render(<ProductForm categories={categories} />);
+    fireEvent.change(screen.getByLabelText("Nombre"), {
+      target: { value: "Chamarra" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Descartar" }));
+
+    expect(replace).toHaveBeenCalledWith("/productos");
+  });
+});
+
 describe("ProductForm (edit)", () => {
   it("prefills from the product and PUTs to the id endpoint", async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
