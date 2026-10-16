@@ -88,7 +88,14 @@ export function ProductForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+    // method="post" so a pre-hydration native submit cannot serialize fields
+    // into the URL (see LoginForm for the full rationale).
+    <form
+      onSubmit={handleSubmit}
+      method="post"
+      className="flex flex-col gap-5"
+      noValidate
+    >
       <Field
         id="name"
         label="Nombre"

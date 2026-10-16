@@ -50,7 +50,17 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+    // method="post": if the form is submitted before React hydrates (JS slow or
+    // blocked), the browser falls back to a native submit. Without a method it
+    // defaults to GET and serializes the password into the URL (history, Referer,
+    // proxy logs). POST keeps credentials out of the URL; the JS path below never
+    // triggers it because handleSubmit calls preventDefault.
+    <form
+      onSubmit={handleSubmit}
+      method="post"
+      className="flex flex-col gap-4"
+      noValidate
+    >
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="username"
