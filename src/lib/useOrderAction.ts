@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { OrderActionKind } from "@/lib/orders";
+import { readErrorRef, withErrorRef } from "@/lib/errorRef";
 
-const GENERIC_ERROR = "La operación falló. Inténtalo de nuevo.";
+const GENERIC_ERROR = "Ocurrió un error inesperado. Inténtalo de nuevo.";
 
 export interface PendingOrderAction {
   id: string;
@@ -44,11 +45,17 @@ export function useOrderAction(onSuccess: () => void): {
         return;
       }
       if (!response.ok) {
-        // The backend returns a Spanish message for the 409 invalid transition.
         const body = (await response.json().catch(() => null)) as
-          | { message?: string }
+          | { message?: string; ref?: unknown }
           | null;
-        setError(body?.message ?? GENERIC_ERROR);
+        // A domain error (e.g. 409 invalid transition) carries a clear Spanish
+        // message and no ref; show it as-is. Otherwise it is an unexpected
+        // failure, so show the generic message with the correlation ref.
+        if (typeof body?.message === "string" && body.message.length > 0) {
+          setError(body.message);
+        } else {
+          setError(withErrorRef(GENERIC_ERROR, readErrorRef(body)));
+        }
         onSuccess();
         return;
       }

@@ -125,6 +125,23 @@ describe("OrdersView transitions", () => {
     await waitFor(() => expect(reload).toHaveBeenCalled());
   });
 
+  it("shows a generic message with the correlation ref on a 5xx", async () => {
+    currentState = { status: "ready", data: [pendingOrder()] };
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: "server_error", ref: "corr-abc" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    render(<OrdersView />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+    const buttons = screen.getAllByRole("button", { name: "Confirmar" });
+    fireEvent.click(buttons[buttons.length - 1]);
+
+    expect(await screen.findByText(/Ref: corr-abc/)).toBeInTheDocument();
+  });
+
   it("redirects to /login on 401", async () => {
     currentState = { status: "ready", data: [pendingOrder()] };
     fetchMock.mockResolvedValue(new Response(null, { status: 401 }));

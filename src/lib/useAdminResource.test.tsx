@@ -17,6 +17,9 @@ function Probe() {
   return (
     <div>
       <span data-testid="state">{state.status}</span>
+      <span data-testid="message">
+        {state.status === "error" ? state.message : ""}
+      </span>
       <button type="button" onClick={reload}>
         reload
       </button>
@@ -77,6 +80,32 @@ describe("useAdminResource", () => {
     await waitFor(() =>
       expect(screen.getByTestId("state")).toHaveTextContent("error"),
     );
+  });
+
+  it("appends the correlation ref when a 5xx carries one", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: "server_error", ref: "corr-xyz" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(<Probe />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("message")).toHaveTextContent("Ref: corr-xyz"),
+    );
+  });
+
+  it("shows the generic message without 'Ref:' when there is no correlationId", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 500 }));
+
+    render(<Probe />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent("error"),
+    );
+    expect(screen.getByTestId("message")).not.toHaveTextContent("Ref:");
   });
 
   it("refetches when reload is called", async () => {
