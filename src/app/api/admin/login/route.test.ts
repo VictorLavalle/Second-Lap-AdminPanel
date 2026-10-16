@@ -95,6 +95,28 @@ describe("POST /api/admin/login", () => {
     expect(blocked.status).toBe(429);
   });
 
+  it("blocks IP rotation via the global cap and returns Retry-After", async () => {
+    vi.spyOn(apiClient, "getAdminMe").mockRejectedValue(
+      new ApiRequestError(401, null),
+    );
+
+    // A fresh forged IP per request never trips the per-IP limit (5), but the
+    // global login cap (30) must eventually stop the flood.
+    let blocked: Response | null = null;
+    for (let attempt = 0; attempt < 31; attempt += 1) {
+      const response = await POST(
+        loginRequest({ username: "a", password: "b" }, `203.0.113.${attempt}`),
+      );
+      if (response.status === 429) {
+        blocked = response;
+        break;
+      }
+    }
+
+    expect(blocked).not.toBeNull();
+    expect(blocked?.headers.get("Retry-After")).toBeTruthy();
+  });
+
   it("rejects invalid JSON with 400", async () => {
     const request = new Request("http://localhost/api/admin/login", {
       method: "POST",

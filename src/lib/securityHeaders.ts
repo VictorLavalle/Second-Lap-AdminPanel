@@ -12,10 +12,14 @@ export interface SecurityHeadersOptions {
 }
 
 // Strict CSP: deny by default, then open only what the admin panel needs.
-// Next's inline bootstrap/runtime requires 'unsafe-inline' for script-src; in
-// dev, Turbopack HMR additionally needs 'unsafe-eval' and a websocket origin.
-// Tailwind injects styles at runtime, hence 'unsafe-inline' for style-src.
-// Product images come from the backend, so img-src allows the backend origin.
+//
+// KNOWN DEBT: script-src keeps 'unsafe-inline' because Next.js injects an inline
+// bootstrap/runtime script we do not control — this is a framework limitation,
+// not a lax choice. Hardening path is to adopt per-request nonces once wired
+// through the app shell. In dev, Turbopack HMR additionally needs 'unsafe-eval'
+// and a websocket origin. Tailwind injects styles at runtime, hence
+// 'unsafe-inline' for style-src. Product images come from the backend, so
+// img-src allows the backend origin.
 export function buildContentSecurityPolicy({
   isDev,
   backendOrigin,

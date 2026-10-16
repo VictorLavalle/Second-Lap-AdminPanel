@@ -19,8 +19,18 @@ import {
 
 const DEFAULT_BASE_URL = "http://localhost:8080/api/v1";
 
+// In production, a missing BACKEND_URL must fail loudly rather than silently
+// pointing at localhost (which could leak requests or mask misconfiguration).
+// In development the localhost default is a convenience.
 function resolveBaseUrl(): string {
-  return process.env.BACKEND_URL ?? DEFAULT_BASE_URL;
+  const configured = process.env.BACKEND_URL;
+  if (configured) {
+    return configured;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("BACKEND_URL must be set in production");
+  }
+  return DEFAULT_BASE_URL;
 }
 
 function basicAuthHeader(credentials: string): string {
