@@ -105,6 +105,10 @@ export const apiClient = {
     return request<Product[]>("/products");
   },
 
+  getProduct(id: string): Promise<Product> {
+    return request<Product>(`/products/${id}`);
+  },
+
   createProduct(
     credentials: string,
     payload: AdminProductRequest,

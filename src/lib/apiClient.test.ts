@@ -232,4 +232,13 @@ describe("apiClient admin methods", () => {
 
     await expect(apiClient.listProducts()).resolves.toHaveLength(1);
   });
+
+  it("gets a single product by id", async () => {
+    fetchMock.mockResolvedValue(jsonOk(sampleProduct));
+
+    await apiClient.getProduct(sampleProduct.id);
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain(`/products/${sampleProduct.id}`);
+  });
 });
