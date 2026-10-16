@@ -1,5 +1,10 @@
 import "@testing-library/jest-dom/vitest";
 
+// Deterministic secrets for session crypto/signing in tests. 32-byte keys,
+// base64-encoded, as the production code expects.
+process.env.SESSION_SECRET ??= Buffer.alloc(32, 7).toString("base64");
+process.env.SESSION_SIGNING_SECRET ??= "test-signing-secret";
+
 // jsdom does not implement <dialog> showModal/close. Provide a minimal polyfill
 // so components using the native dialog can be tested.
 if (typeof HTMLDialogElement !== "undefined") {
