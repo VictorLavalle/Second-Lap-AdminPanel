@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, type SyntheticEvent } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/types";
 import { sanitizeMultiline, sanitizeText } from "@/lib/sanitize";
 import { formatPriceWithCents } from "@/lib/format";
+import { ACCEPTED_IMAGE_TYPES, validateImages } from "@/lib/imageUpload";
 import {
   PRODUCT_CONDITIONS,
   toProductRequest,
@@ -40,6 +41,11 @@ export function ProductForm({
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Create mode lets the user pick images up front; they are uploaded right
+  // after the product is created (the upload endpoint needs the new product id).
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const isEdit = product !== undefined;
   const endpoint = useMemo(
@@ -59,6 +65,33 @@ export function ProductForm({
     value: string,
   ): void {
     setValues((previous) => ({ ...previous, [key]: value }));
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    setImageError(null);
+    const files = Array.from(event.target.files ?? []);
+    const error = validateImages(files);
+    if (error) {
+      setImageError(error);
+      setSelectedFiles([]);
+      return;
+    }
+    setSelectedFiles(files);
+  }
+
+  // Uploads the pre-selected images to a freshly created product. Returns true
+  // on success; on failure the product already exists, so the caller routes the
+  // user to the edit screen to retry rather than losing their work.
+  async function uploadImages(productId: string): Promise<boolean> {
+    const body = new FormData();
+    for (const file of selectedFiles) {
+      body.append("files", file);
+    }
+    const response = await fetch(
+      `/api/admin/products/${productId}/images`,
+      { method: "POST", body },
+    );
+    return response.ok;
   }
 
   async function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
@@ -86,6 +119,19 @@ export function ProductForm({
         setSubmitError(SUBMIT_ERROR);
         return;
       }
+
+      // On create with selected images, upload them before leaving. If the
+      // upload fails, the product exists, so send the user to edit to retry.
+      if (!isEdit && selectedFiles.length > 0) {
+        const created = (await response.json()) as Product;
+        const uploaded = await uploadImages(created.id);
+        if (!uploaded) {
+          router.replace(`/productos/${created.id}/editar`);
+          router.refresh();
+          return;
+        }
+      }
+
       router.replace("/productos");
       router.refresh();
     } catch {
@@ -211,6 +257,33 @@ export function ProductForm({
         value={values.measurements}
         onChange={(value) => update("measurements", sanitizeText(value, 200))}
       />
+
+      {!isEdit ? (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="images" className="text-sm font-medium">
+            Imágenes (opcional, JPEG/PNG/WebP, máx. 5 MB)
+          </label>
+          <input
+            id="images"
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={ACCEPTED_IMAGE_TYPES.join(",")}
+            onChange={handleFileChange}
+            className="text-sm"
+          />
+          {imageError ? (
+            <p role="alert" className="text-xs text-[var(--color-danger)]">
+              {imageError}
+            </p>
+          ) : null}
+          {selectedFiles.length > 0 ? (
+            <p className="text-xs text-[var(--color-muted)]">
+              {selectedFiles.length} imagen(es) se subirán al crear el producto.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {submitError ? (
         <p role="alert" className="text-sm text-[var(--color-danger)]">

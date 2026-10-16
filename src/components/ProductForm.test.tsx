@@ -115,6 +115,50 @@ describe("ProductForm (create)", () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/productos"));
   });
 
+  it("uploads selected images after creating the product", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "new-id" }), { status: 201 }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    render(<ProductForm categories={categories} />);
+
+    fillValid();
+    const file = new File(["x"], "p.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText(/Imágenes/), {
+      target: { files: [file] },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/admin/products/new-id/images",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/productos"));
+  });
+
+  it("routes to edit when the image upload fails after create", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "new-id" }), { status: 201 }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 500 }));
+    render(<ProductForm categories={categories} />);
+
+    fillValid();
+    const file = new File(["x"], "p.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText(/Imágenes/), {
+      target: { files: [file] },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith("/productos/new-id/editar"),
+    );
+  });
+
   it("shows a submit error on a failed response", async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 400 }));
     render(<ProductForm categories={categories} />);
