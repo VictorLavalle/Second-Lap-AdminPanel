@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { middleware } from "./middleware";
+import { proxy } from "./proxy";
 import { signToken } from "@/lib/sessionCookie";
 import { SESSION_COOKIE } from "@/lib/authConstants";
 
@@ -15,14 +15,14 @@ function requestFor(
   return request;
 }
 
-describe("middleware", () => {
+describe("proxy", () => {
   it("lets the /login page through without a session", async () => {
-    const response = await middleware(requestFor("/login"));
+    const response = await proxy(requestFor("/login"));
     expect(response.headers.get("location")).toBeNull();
   });
 
   it("sets a Content-Security-Policy header on the /login response", async () => {
-    const response = await middleware(requestFor("/login"));
+    const response = await proxy(requestFor("/login"));
     const csp = response.headers.get("Content-Security-Policy");
 
     expect(csp).toBeTruthy();
@@ -31,13 +31,13 @@ describe("middleware", () => {
   });
 
   it("redirects to /login when no valid token is present", async () => {
-    const response = await middleware(requestFor("/productos"));
+    const response = await proxy(requestFor("/productos"));
     expect(response.headers.get("location")).toContain("/login");
   });
 
   it("allows a protected route when the session cookie is valid and attaches a CSP", async () => {
     const token = await signToken({ enc: "c", exp: Date.now() + 60_000 });
-    const response = await middleware(
+    const response = await proxy(
       requestFor("/productos", { [SESSION_COOKIE]: token }),
     );
     expect(response.headers.get("location")).toBeNull();
@@ -48,21 +48,21 @@ describe("middleware", () => {
 
   it("redirects when the session cookie is expired and no refresh exists", async () => {
     const expired = await signToken({ enc: "c", exp: Date.now() - 1 });
-    const response = await middleware(
+    const response = await proxy(
       requestFor("/productos", { [SESSION_COOKIE]: expired }),
     );
     expect(response.headers.get("location")).toContain("/login");
   });
 
   it("does not attach a CSP header to the redirect response", async () => {
-    const response = await middleware(requestFor("/productos"));
+    const response = await proxy(requestFor("/productos"));
     expect(response.headers.get("Content-Security-Policy")).toBeNull();
   });
 
   it("emits a nonce-based CSP (no script unsafe-inline) in production", async () => {
     vi.stubEnv("NODE_ENV", "production");
     try {
-      const response = await middleware(requestFor("/login"));
+      const response = await proxy(requestFor("/login"));
       const csp = response.headers.get("Content-Security-Policy");
 
       expect(csp).toMatch(/script-src [^;]*'nonce-/);
@@ -76,8 +76,8 @@ describe("middleware", () => {
   it("generates a distinct nonce per request in production", async () => {
     vi.stubEnv("NODE_ENV", "production");
     try {
-      const first = await middleware(requestFor("/login"));
-      const second = await middleware(requestFor("/login"));
+      const first = await proxy(requestFor("/login"));
+      const second = await proxy(requestFor("/login"));
       const nonceOf = (csp: string | null) =>
         csp?.match(/'nonce-([^']+)'/)?.[1];
 

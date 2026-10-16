@@ -4,10 +4,10 @@ import { REFRESH_COOKIE, SESSION_COOKIE } from "@/lib/authConstants";
 import { generateNonce } from "@/lib/nonce";
 import { buildContentSecurityPolicy } from "@/lib/securityHeaders";
 
-// Edge middleware. Runs in the edge runtime, where node:crypto does NOT exist,
-// so it only uses Web Crypto (hasValidToken for cookie signatures, generateNonce
-// for the CSP nonce). It never decrypts the AES credential blob or calls the
-// backend.
+// Edge proxy (Next 16's renamed "middleware" convention). Runs in the edge
+// runtime, where node:crypto does NOT exist, so it only uses Web Crypto
+// (hasValidToken for cookie signatures, generateNonce for the CSP nonce). It
+// never decrypts the AES credential blob or calls the backend.
 //
 // Responsibilities:
 //  1. Auth guard: a valid session OR a still-valid refresh token lets the
@@ -51,7 +51,7 @@ function responseWithCsp(request: NextRequest, nonce: string): NextResponse {
   return response;
 }
 
-export async function middleware(request: NextRequest): Promise<NextResponse> {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const nonce = generateNonce();
 
