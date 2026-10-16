@@ -19,8 +19,15 @@ const sampleOrder: Order = {
   subtotal: 100,
   shippingFee: 0,
   total: 100,
-  status: "pending",
+  status: "pendiente",
   createdAt: "2026-01-15T18:30:00.000Z",
+  confirmedAt: null,
+  completedAt: null,
+  deliveredAt: null,
+  cancelledAt: null,
+  events: [
+    { fromStatus: null, toStatus: "pendiente", occurredAt: "2026-01-15T18:30:00.000Z" },
+  ],
   storeWhatsapp: "529996384026",
 };
 

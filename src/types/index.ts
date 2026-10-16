@@ -6,7 +6,12 @@ export type ProductCondition = "Como nuevo" | "Excelente" | "Buen estado";
 
 export type ProductStatus = "disponible" | "apartado" | "vendido";
 
-export type OrderStatus = "pending" | "confirmed" | "cancelled";
+export type OrderStatus =
+  | "pendiente"
+  | "confirmado"
+  | "completado"
+  | "entregado"
+  | "cancelado";
 
 export type DeliveryMethod = "recoger" | "domicilio" | "paqueteria";
 
@@ -71,6 +76,13 @@ export interface OrderShippingAddress {
   mapsLink: string | null;
 }
 
+export interface OrderEvent {
+  // Null only for the creation event (null -> pendiente).
+  fromStatus: OrderStatus | null;
+  toStatus: OrderStatus;
+  occurredAt: string;
+}
+
 export interface Order {
   id: string;
   items: OrderItem[];
@@ -83,6 +95,12 @@ export interface Order {
   total: number;
   status: OrderStatus;
   createdAt: string;
+  confirmedAt: string | null;
+  completedAt: string | null;
+  deliveredAt: string | null;
+  cancelledAt: string | null;
+  // Status change timeline, oldest first (render as-is).
+  events: OrderEvent[];
   storeWhatsapp: string;
 }
 

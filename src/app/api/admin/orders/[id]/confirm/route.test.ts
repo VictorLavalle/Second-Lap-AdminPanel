@@ -20,8 +20,16 @@ const confirmed: Order = {
   subtotal: 0,
   shippingFee: 0,
   total: 0,
-  status: "confirmed",
+  status: "confirmado",
   createdAt: "2026-01-15T18:30:00.000Z",
+  confirmedAt: "2026-01-15T19:00:00.000Z",
+  completedAt: null,
+  deliveredAt: null,
+  cancelledAt: null,
+  events: [
+    { fromStatus: null, toStatus: "pendiente", occurredAt: "2026-01-15T18:30:00.000Z" },
+    { fromStatus: "pendiente", toStatus: "confirmado", occurredAt: "2026-01-15T19:00:00.000Z" },
+  ],
   storeWhatsapp: "52999",
 };
 
