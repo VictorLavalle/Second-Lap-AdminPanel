@@ -1,6 +1,7 @@
 "use client";
 
-import type { Product } from "@/types";
+import { useMemo, useState } from "react";
+import type { Product, ProductStatus } from "@/types";
 import { useAdminResource } from "@/lib/useAdminResource";
 import { ProductsTable } from "@/components/ProductsTable";
 
@@ -44,17 +45,114 @@ function ErrorState({
   );
 }
 
+type StatusFilter = ProductStatus | "all";
+
+const STATUS_OPTIONS: ReadonlyArray<{ value: StatusFilter; label: string }> = [
+  { value: "all", label: "Todos los estados" },
+  { value: "disponible", label: "Disponible" },
+  { value: "apartado", label: "Apartado" },
+  { value: "vendido", label: "Vendido" },
+];
+
+const SORT_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "createdAt,desc", label: "Más recientes" },
+  { value: "createdAt,asc", label: "Más antiguos" },
+  { value: "price,asc", label: "Precio: menor a mayor" },
+  { value: "price,desc", label: "Precio: mayor a menor" },
+];
+
+function Controls({
+  status,
+  sort,
+  onStatus,
+  onSort,
+}: Readonly<{
+  status: StatusFilter;
+  sort: string;
+  onStatus: (value: StatusFilter) => void;
+  onSort: (value: string) => void;
+}>) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium text-[var(--color-ink)]">Estado</span>
+        <select
+          value={status}
+          onChange={(event) => onStatus(event.target.value as StatusFilter)}
+          className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 outline-none focus:border-[var(--color-accent)]"
+        >
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium text-[var(--color-ink)]">Ordenar por</span>
+        <select
+          value={sort}
+          onChange={(event) => onSort(event.target.value)}
+          className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 outline-none focus:border-[var(--color-accent)]"
+        >
+          {SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 export function ProductsView() {
-  const { state, reload } = useAdminResource<Product[]>("/api/admin/products");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [sort, setSort] = useState<string>("createdAt,desc");
+
+  const path = useMemo(() => {
+    const query = new URLSearchParams({ sort });
+    if (status !== "all") {
+      query.set("status", status);
+    }
+    return `/api/admin/products?${query.toString()}`;
+  }, [status, sort]);
+
+  const { state, reload } = useAdminResource<Product[]>(path);
+
+  const controls = (
+    <Controls
+      status={status}
+      sort={sort}
+      onStatus={setStatus}
+      onSort={setSort}
+    />
+  );
 
   if (state.status === "loading") {
-    return <LoadingState />;
+    return (
+      <div className="flex flex-col gap-4">
+        {controls}
+        <LoadingState />
+      </div>
+    );
   }
   if (state.status === "error") {
-    return <ErrorState message={state.message} onRetry={reload} />;
+    return (
+      <div className="flex flex-col gap-4">
+        {controls}
+        <ErrorState message={state.message} onRetry={reload} />
+      </div>
+    );
   }
-  if (state.data.length === 0) {
-    return <EmptyState />;
-  }
-  return <ProductsTable products={state.data} />;
+  return (
+    <div className="flex flex-col gap-4">
+      {controls}
+      {state.data.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <ProductsTable products={state.data} />
+      )}
+    </div>
+  );
 }
