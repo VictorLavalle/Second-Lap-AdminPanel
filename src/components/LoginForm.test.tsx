@@ -50,7 +50,9 @@ describe("LoginForm", () => {
     fillAndSubmit();
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/productos"));
-    expect(refresh).toHaveBeenCalled();
+    // No router.refresh(): a second navigation here raced the replace() stream
+    // and surfaced "CLOSED writable stream" on slower devices.
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("shows a generic message on 401 without leaking which field was wrong", async () => {

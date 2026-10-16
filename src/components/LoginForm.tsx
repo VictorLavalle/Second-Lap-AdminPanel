@@ -40,8 +40,11 @@ export function LoginForm() {
         setError(messageForStatus(response.status));
         return;
       }
+      // replace() navigates to the protected route, which Next renders fresh
+      // with the session cookie just set. A second router.refresh() here raced
+      // this navigation (two competing RSC streams), which on slower
+      // devices/networks surfaced "Cannot write to a CLOSED writable stream".
       router.replace("/productos");
-      router.refresh();
     } catch {
       setError(NETWORK_ERROR);
     } finally {
