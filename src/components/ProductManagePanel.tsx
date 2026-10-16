@@ -1,13 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Product, ProductStatus } from "@/types";
-import {
-  ACCEPTED_IMAGE_TYPES,
-  validateImages,
-} from "@/lib/imageUpload";
+import { validateImages } from "@/lib/imageUpload";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { ImagePicker } from "@/components/ImagePicker";
 import { imageUrl } from "@/lib/imageUrl";
 
 const PRODUCT_STATUSES: ProductStatus[] = [
@@ -26,30 +24,12 @@ const GENERIC_ERROR = "La operación falló. Inténtalo de nuevo.";
 
 export function ProductManagePanel({ product }: Readonly<{ product: Product }>) {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
   const [status, setStatus] = useState<ProductStatus>(product.status);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const previews = useMemo(
-    () => selectedFiles.map((file) => URL.createObjectURL(file)),
-    [selectedFiles],
-  );
-
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    setImageError(null);
-    const files = Array.from(event.target.files ?? []);
-    const error = validateImages(files);
-    if (error) {
-      setImageError(error);
-      setSelectedFiles([]);
-      return;
-    }
-    setSelectedFiles(files);
-  }
 
   async function handleUpload() {
     if (selectedFiles.length === 0) {
@@ -75,9 +55,6 @@ export function ProductManagePanel({ product }: Readonly<{ product: Product }>) 
         return;
       }
       setSelectedFiles([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
       router.refresh();
     } catch {
       setActionError(GENERIC_ERROR);
@@ -170,40 +147,17 @@ export function ProductManagePanel({ product }: Readonly<{ product: Product }>) 
           </p>
         )}
 
-        <label htmlFor="images" className="text-sm font-medium">
-          Agregar imágenes (JPEG, PNG o WebP, máx. 5 MB)
-        </label>
-        <input
-          id="images"
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept={ACCEPTED_IMAGE_TYPES.join(",")}
-          onChange={handleFileChange}
-          className="text-sm"
+        <ImagePicker
+          files={selectedFiles}
+          error={imageError}
+          disabled={busy}
+          label="Agregar imágenes"
+          onChange={(files) => {
+            const error = validateImages(files);
+            setImageError(error);
+            setSelectedFiles(error ? [] : files);
+          }}
         />
-        {imageError ? (
-          <p role="alert" className="text-xs text-[var(--color-danger)]">
-            {imageError}
-          </p>
-        ) : null}
-
-        {previews.length > 0 ? (
-          <ul className="flex flex-wrap gap-3">
-            {previews.map((preview, index) => (
-              <li key={preview}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- local object URL preview */}
-                <img
-                  src={preview}
-                  alt={`Vista previa ${index + 1}`}
-                  width={96}
-                  height={96}
-                  className="h-24 w-24 rounded-md border border-dashed border-[var(--color-accent)] object-cover"
-                />
-              </li>
-            ))}
-          </ul>
-        ) : null}
 
         <div>
           <button
