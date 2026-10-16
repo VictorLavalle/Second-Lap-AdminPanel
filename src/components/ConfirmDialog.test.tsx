@@ -46,6 +46,23 @@ describe("ConfirmDialog", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("renders a custom cancel label when provided", () => {
+    render(
+      <ConfirmDialog
+        open
+        title="Descartar"
+        description="¿Seguro?"
+        confirmLabel="Descartar"
+        cancelLabel="Continuar editando"
+        onConfirm={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Continuar editando" }),
+    ).toBeInTheDocument();
+  });
+
   it("closes the native dialog when open flips to false", () => {
     const onConfirm = vi.fn();
     const onClose = vi.fn();

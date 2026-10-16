@@ -330,6 +330,7 @@ export function ProductForm({
             : "Tienes cambios sin guardar. ¿Seguro que quieres descartar la creación de este producto?"
         }
         confirmLabel="Descartar"
+        cancelLabel="Continuar editando"
         onConfirm={confirmDiscard}
         onClose={() => setDiscardOpen(false)}
       />
