@@ -25,7 +25,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es-MX" className={`${outfit.variable} h-full antialiased`}>
+    <html
+      lang="es-MX"
+      data-scroll-behavior="smooth"
+      className={`${outfit.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
