@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 import { buildStaticSecurityHeaders } from "./src/lib/securityHeaders";
 
 // Static hardening headers apply to every response. The Content-Security-Policy
-// is NOT set here: it carries a per-request nonce and is emitted by the
-// middleware instead (see src/middleware.ts).
+// is NOT set here: it carries a per-request nonce and is emitted by the edge
+// proxy instead (see src/proxy.ts).
 const securityHeaders = buildStaticSecurityHeaders();
 
 const nextConfig: NextConfig = {
