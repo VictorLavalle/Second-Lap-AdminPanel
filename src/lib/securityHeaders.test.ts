@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildContentSecurityPolicy,
-  buildSecurityHeaders,
+  buildStaticSecurityHeaders,
 } from "./securityHeaders";
 
 const backendOrigin = "http://localhost:8080";
@@ -22,26 +22,42 @@ describe("buildContentSecurityPolicy", () => {
     expect(csp).toContain(`img-src 'self' data: blob: ${backendOrigin}`);
   });
 
-  it("tightens script-src and connect-src in production", () => {
+  it("uses a nonce and strict-dynamic in production, dropping unsafe-inline for scripts", () => {
+    const csp = buildContentSecurityPolicy({
+      isDev: false,
+      backendOrigin,
+      nonce: "abc123",
+    });
+
+    expect(csp).toContain("script-src 'self' 'nonce-abc123' 'strict-dynamic'");
+    expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
+    expect(csp).toContain("connect-src 'self';");
+  });
+
+  it("falls back to unsafe-inline in production only when no nonce is supplied", () => {
     const csp = buildContentSecurityPolicy({ isDev: false, backendOrigin });
 
     expect(csp).toContain("script-src 'self' 'unsafe-inline';");
-    expect(csp).not.toContain("'unsafe-eval'");
-    expect(csp).toContain("connect-src 'self';");
-    expect(csp).not.toContain("ws:");
+    expect(csp).not.toContain("'nonce-");
   });
 
   it("relaxes script-src and connect-src for HMR in development", () => {
-    const csp = buildContentSecurityPolicy({ isDev: true, backendOrigin });
+    const csp = buildContentSecurityPolicy({
+      isDev: true,
+      backendOrigin,
+      nonce: "ignored-in-dev",
+    });
 
     expect(csp).toContain("'unsafe-eval'");
+    expect(csp).toContain("'unsafe-inline'");
+    expect(csp).not.toContain("'nonce-");
     expect(csp).toContain(`connect-src 'self' ws: ${backendOrigin}`);
   });
 });
 
-describe("buildSecurityHeaders", () => {
-  it("includes the hardening headers alongside the CSP", () => {
-    const headers = buildSecurityHeaders({ isDev: false, backendOrigin });
+describe("buildStaticSecurityHeaders", () => {
+  it("includes the hardening headers and does NOT include the CSP", () => {
+    const headers = buildStaticSecurityHeaders();
     const byKey = new Map(headers.map((h) => [h.key, h.value]));
 
     expect(byKey.get("X-Content-Type-Options")).toBe("nosniff");
@@ -49,7 +65,8 @@ describe("buildSecurityHeaders", () => {
     expect(byKey.get("Referrer-Policy")).toBe(
       "strict-origin-when-cross-origin",
     );
-    expect(byKey.has("Content-Security-Policy")).toBe(true);
     expect(byKey.has("Permissions-Policy")).toBe(true);
+    // CSP is per-request (middleware), so it must not be in the static set.
+    expect(byKey.has("Content-Security-Policy")).toBe(false);
   });
 });
