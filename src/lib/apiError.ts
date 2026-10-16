@@ -33,6 +33,20 @@ export class ApiRequestError extends Error {
   get isRateLimited(): boolean {
     return this.status === 429;
   }
+
+  // True for unexpected server-side failures (5xx) that warrant surfacing a
+  // correlation reference to the user; 4xx carry clear domain messages instead.
+  get isServerError(): boolean {
+    return this.status >= 500;
+  }
+
+  // The backend includes a correlationId in ApiError.context on 5xx responses so
+  // a failure the user saw can be cross-referenced with server logs. Returns the
+  // id when present as a string, otherwise null.
+  get correlationId(): string | null {
+    const value = this.context?.correlationId;
+    return typeof value === "string" ? value : null;
+  }
 }
 
 // Retry-After may be a number of seconds or an HTTP date. We only honor the

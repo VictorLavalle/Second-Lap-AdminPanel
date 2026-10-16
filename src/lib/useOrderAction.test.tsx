@@ -116,7 +116,63 @@ describe("useOrderAction", () => {
     fireEvent.click(screen.getByRole("button", { name: "run" }));
 
     await waitFor(() =>
-      expect(screen.getByTestId("error")).toHaveTextContent(/la operación falló/i),
+      expect(screen.getByTestId("error")).toHaveTextContent(/error inesperado/i),
     );
+  });
+
+  it("appends the correlation ref on an unexpected (5xx) error", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: "server_error", ref: "corr-123" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    render(<Probe />);
+
+    fireEvent.click(screen.getByRole("button", { name: "stage" }));
+    fireEvent.click(screen.getByRole("button", { name: "run" }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("error")).toHaveTextContent("Ref: corr-123"),
+    );
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  it("does not show a ref for a domain 409 error", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ message: "El pedido no está pendiente" }), {
+        status: 409,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    render(<Probe />);
+
+    fireEvent.click(screen.getByRole("button", { name: "stage" }));
+    fireEvent.click(screen.getByRole("button", { name: "run" }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("error")).toHaveTextContent(
+        "El pedido no está pendiente",
+      ),
+    );
+    expect(screen.getByTestId("error")).not.toHaveTextContent("Ref:");
+  });
+
+  it("degrades to the generic message without 'Ref:' when a 5xx has no correlationId", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: "server_error" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    render(<Probe />);
+
+    fireEvent.click(screen.getByRole("button", { name: "stage" }));
+    fireEvent.click(screen.getByRole("button", { name: "run" }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("error")).toHaveTextContent(/error inesperado/i),
+    );
+    expect(screen.getByTestId("error")).not.toHaveTextContent("Ref:");
   });
 });

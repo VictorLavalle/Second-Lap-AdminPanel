@@ -57,4 +57,28 @@ describe("errorResponse", () => {
     const response = errorResponse(new Error("boom"));
     expect(response.status).toBe(502);
   });
+
+  it("forwards the correlationId as 'ref' on a 5xx", async () => {
+    const response = errorResponse(
+      new ApiRequestError(500, {
+        code: "INTERNAL",
+        message: "boom",
+        context: { correlationId: "corr-77" },
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    const body = (await response.json()) as { error: string; ref?: string };
+    expect(body.error).toBe("server_error");
+    expect(body.ref).toBe("corr-77");
+  });
+
+  it("omits 'ref' on a 5xx without a correlationId", async () => {
+    const response = errorResponse(new ApiRequestError(503, null));
+
+    expect(response.status).toBe(503);
+    const body = (await response.json()) as { error: string; ref?: string };
+    expect(body.error).toBe("server_error");
+    expect(body.ref).toBeUndefined();
+  });
 });

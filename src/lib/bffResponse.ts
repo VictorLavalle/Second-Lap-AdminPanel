@@ -35,6 +35,8 @@ export function unauthorizedResponse(): NextResponse {
 // Maps an ApiRequestError from the backend to a BFF response. A 401 from the
 // backend means our stored credentials are no longer valid, so we clear the
 // session; other errors pass through their status with a safe generic body.
+// For 5xx we also forward the backend's correlationId as `ref` (nothing else
+// from context is exposed) so the user-visible error can be matched to logs.
 export function errorResponse(error: unknown): NextResponse {
   if (error instanceof ApiRequestError) {
     if (error.isUnauthorized) {
@@ -51,10 +53,25 @@ export function errorResponse(error: unknown): NextResponse {
         },
       );
     }
+    if (error.isServerError) {
+      return NextResponse.json(
+        serverErrorBody(error.correlationId),
+        { status: error.status },
+      );
+    }
     return NextResponse.json(
       { error: error.code, message: error.message },
       { status: error.status },
     );
   }
   return NextResponse.json({ error: "upstream_error" }, { status: 502 });
+}
+
+// Body for a 5xx passed through to the client, carrying only the correlation
+// reference (never the full context) when the backend provided one.
+function serverErrorBody(ref: string | null): { error: string; ref?: string } {
+  if (ref) {
+    return { error: "server_error", ref };
+  }
+  return { error: "server_error" };
 }

@@ -41,6 +41,33 @@ describe("ApiRequestError", () => {
     expect(error.isRateLimited).toBe(true);
     expect(error.retryAfterSeconds).toBe(30);
   });
+
+  it("flags 5xx as server errors and 4xx as not", () => {
+    expect(new ApiRequestError(500, null).isServerError).toBe(true);
+    expect(new ApiRequestError(503, null).isServerError).toBe(true);
+    expect(new ApiRequestError(409, null).isServerError).toBe(false);
+  });
+
+  it("extracts a string correlationId from context", () => {
+    const error = new ApiRequestError(500, {
+      code: "INTERNAL",
+      message: "boom",
+      context: { correlationId: "corr-9" },
+    });
+
+    expect(error.correlationId).toBe("corr-9");
+  });
+
+  it("returns null when correlationId is absent or not a string", () => {
+    expect(new ApiRequestError(500, null).correlationId).toBeNull();
+    expect(
+      new ApiRequestError(500, {
+        code: "X",
+        message: "m",
+        context: { correlationId: 123 },
+      }).correlationId,
+    ).toBeNull();
+  });
 });
 
 describe("parseRetryAfter", () => {

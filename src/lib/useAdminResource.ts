@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { readErrorRef, withErrorRef } from "@/lib/errorRef";
 
 export type ResourceState<T> =
   | { status: "loading" }
@@ -33,7 +34,13 @@ export function useAdminResource<T>(path: string): {
         return;
       }
       if (!response.ok) {
-        setState({ status: "error", message: GENERIC_ERROR });
+        // Unexpected (5xx) responses carry a correlation ref; append it so the
+        // user can quote it when reporting the failure. 4xx have no ref.
+        const body = await response.json().catch(() => null);
+        setState({
+          status: "error",
+          message: withErrorRef(GENERIC_ERROR, readErrorRef(body)),
+        });
         return;
       }
       const data = (await response.json()) as T;
