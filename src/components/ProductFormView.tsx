@@ -3,6 +3,7 @@
 import type { Category, Product } from "@/types";
 import { useAdminResource } from "@/lib/useAdminResource";
 import { ProductForm } from "@/components/ProductForm";
+import { ProductManagePanel } from "@/components/ProductManagePanel";
 
 function Loading() {
   return (
@@ -56,9 +57,12 @@ export function ProductEditView({ productId }: Readonly<{ productId: string }>) 
     return <LoadError message={product.state.message} />;
   }
   return (
-    <ProductForm
-      categories={categories.state.data}
-      product={product.state.data}
-    />
+    <div className="flex flex-col gap-8">
+      <ProductForm
+        categories={categories.state.data}
+        product={product.state.data}
+      />
+      <ProductManagePanel product={product.state.data} />
+    </div>
   );
 }

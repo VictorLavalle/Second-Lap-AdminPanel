@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GET, PUT } from "./route";
+import { GET, PUT, DELETE } from "./route";
 import { apiClient } from "@/lib/apiClient";
 import { ApiRequestError } from "@/lib/apiError";
 import { SESSION_COOKIE } from "@/lib/authSession";
@@ -112,6 +112,34 @@ describe("PUT /api/admin/products/[id]", () => {
     );
 
     const response = await PUT(await authed("PUT", payload), context());
+    expect(response.status).toBe(404);
+  });
+});
+
+describe("DELETE /api/admin/products/[id]", () => {
+  it("deletes the product and returns 204", async () => {
+    vi.spyOn(apiClient, "deleteProduct").mockResolvedValue(undefined);
+
+    const response = await DELETE(await authed("DELETE"), context());
+    expect(response.status).toBe(204);
+  });
+
+  it("returns 401 without a session", async () => {
+    const response = await DELETE(
+      new Request(`http://localhost/api/admin/products/${productId}`, {
+        method: "DELETE",
+      }),
+      context(),
+    );
+    expect(response.status).toBe(401);
+  });
+
+  it("passes a backend 404 through as 404", async () => {
+    vi.spyOn(apiClient, "deleteProduct").mockRejectedValue(
+      new ApiRequestError(404, { code: "NOT_FOUND", message: "x" }),
+    );
+
+    const response = await DELETE(await authed("DELETE"), context());
     expect(response.status).toBe(404);
   });
 });
