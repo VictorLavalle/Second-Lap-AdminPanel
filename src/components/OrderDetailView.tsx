@@ -10,6 +10,7 @@ import {
   actionDialogCopy,
   allowedActions,
   buildWhatsappLink,
+  eventActorLabel,
   eventLabel,
   formatOrderDate,
 } from "@/lib/orders";
@@ -204,19 +205,28 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
       <section className="grid gap-2 text-sm">
         <h2 className="font-semibold text-[var(--color-ink)]">Historial</h2>
         <ol className="flex flex-col gap-2 border-l border-[var(--color-line)] pl-4">
-          {order.events.map((event, index) => (
-            <li
-              key={`${event.toStatus}-${event.occurredAt}-${index}`}
-              className="flex flex-col"
-            >
-              <span className="font-medium text-[var(--color-ink)]">
-                {eventLabel(event.fromStatus, event.toStatus)}
-              </span>
-              <span className="text-xs text-[var(--color-muted)]">
-                {formatOrderDate(event.occurredAt)}
-              </span>
-            </li>
-          ))}
+          {order.events.map((event, index) => {
+            const actor = eventActorLabel(event.actor);
+            return (
+              <li
+                key={`${event.toStatus}-${event.occurredAt}-${index}`}
+                className="flex flex-col"
+              >
+                <span className="font-medium text-[var(--color-ink)]">
+                  {eventLabel(event.fromStatus, event.toStatus)}
+                  {actor ? (
+                    <span className="font-normal text-[var(--color-muted)]">
+                      {" · "}
+                      {actor}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="text-xs text-[var(--color-muted)]">
+                  {formatOrderDate(event.occurredAt)}
+                </span>
+              </li>
+            );
+          })}
         </ol>
       </section>
 

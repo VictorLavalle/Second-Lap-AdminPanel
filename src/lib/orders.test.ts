@@ -4,6 +4,7 @@ import {
   actionDialogCopy,
   allowedActions,
   buildWhatsappLink,
+  eventActorLabel,
   eventLabel,
   formatOrderDate,
   hasActions,
@@ -82,6 +83,20 @@ describe("eventLabel", () => {
   it("labels other events by the target status", () => {
     expect(eventLabel("pendiente", "confirmado")).toBe("Confirmado");
     expect(eventLabel("completado", "entregado")).toBe("Entregado");
+  });
+});
+
+describe("eventActorLabel", () => {
+  it("returns a 'por <actor>' suffix when an admin performed the transition", () => {
+    expect(eventActorLabel("ana.admin")).toBe("por ana.admin");
+  });
+
+  it("returns null (never 'por null') when there is no actor", () => {
+    expect(eventActorLabel(null)).toBeNull();
+  });
+
+  it("returns null for an empty actor string", () => {
+    expect(eventActorLabel("")).toBeNull();
   });
 });
 
