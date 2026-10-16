@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState, type SyntheticEvent } from "react";
+import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/types";
 import { sanitizeMultiline, sanitizeText } from "@/lib/sanitize";
 import { formatPriceWithCents } from "@/lib/format";
 import { validateImages } from "@/lib/imageUpload";
 import { ImagePicker } from "@/components/ImagePicker";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   PRODUCT_CONDITIONS,
   toProductRequest,
@@ -59,6 +60,40 @@ export function ProductForm({
     const amount = Number.parseFloat(values.price);
     return Number.isFinite(amount) ? formatPriceWithCents(amount) : null;
   }, [values.price]);
+
+  const [discardOpen, setDiscardOpen] = useState(false);
+
+  // In create mode, consider the form dirty if any field was touched or images
+  // were picked. Used to confirm before discarding in-progress work.
+  const isDirty =
+    !isEdit &&
+    (Object.values(values).some((value) => value.trim() !== "") ||
+      selectedFiles.length > 0);
+
+  // Warn on tab close/refresh while there is unsaved create-in-progress work.
+  useEffect(() => {
+    if (!isDirty || submitting) {
+      return;
+    }
+    function warn(event: BeforeUnloadEvent) {
+      event.preventDefault();
+    }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty, submitting]);
+
+  function handleCancel() {
+    if (isDirty) {
+      setDiscardOpen(true);
+      return;
+    }
+    router.replace("/productos");
+  }
+
+  function confirmDiscard() {
+    setDiscardOpen(false);
+    router.replace("/productos");
+  }
 
   function update<K extends keyof ProductFormValues>(
     key: K,
@@ -130,14 +165,15 @@ export function ProductForm({
   }
 
   return (
-    // method="post" so a pre-hydration native submit cannot serialize fields
-    // into the URL (see LoginForm for the full rationale).
-    <form
-      onSubmit={handleSubmit}
-      method="post"
-      className="flex flex-col gap-5"
-      noValidate
-    >
+    <>
+      {/* method="post" so a pre-hydration native submit cannot serialize fields
+          into the URL (see LoginForm for the full rationale). */}
+      <form
+        onSubmit={handleSubmit}
+        method="post"
+        className="flex flex-col gap-5"
+        noValidate
+      >
       <Field
         id="name"
         label="Nombre"
@@ -275,13 +311,23 @@ export function ProductForm({
         </button>
         <button
           type="button"
-          onClick={() => router.replace("/productos")}
+          onClick={handleCancel}
           className="rounded-md border border-[var(--color-line)] px-4 py-2 font-medium hover:bg-[var(--color-canvas)]"
         >
           Cancelar
         </button>
       </div>
     </form>
+
+      <ConfirmDialog
+        open={discardOpen}
+        title="Descartar producto"
+        description="Tienes cambios sin guardar. ¿Seguro que quieres descartar la creación de este producto?"
+        confirmLabel="Descartar"
+        onConfirm={confirmDiscard}
+        onClose={() => setDiscardOpen(false)}
+      />
+    </>
   );
 }
 
