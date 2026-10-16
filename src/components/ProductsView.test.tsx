@@ -31,6 +31,8 @@ function sampleProduct(): Product {
     color: null,
     measurements: null,
     status: "disponible",
+    createdAt: "2026-01-01T00:00:00Z",
+    modifiedDate: null,
   };
 }
 
