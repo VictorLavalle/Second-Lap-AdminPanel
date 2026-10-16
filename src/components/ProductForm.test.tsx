@@ -254,4 +254,22 @@ describe("ProductForm (edit)", () => {
       ),
     );
   });
+
+  it("navigates away without confirming when nothing changed", () => {
+    render(<ProductForm categories={categories} product={existingProduct} />);
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(replace).toHaveBeenCalledWith("/productos");
+  });
+
+  it("confirms before discarding edited (changed) fields", () => {
+    render(<ProductForm categories={categories} product={existingProduct} />);
+    fireEvent.change(screen.getByLabelText("Nombre"), {
+      target: { value: "Camisa nueva" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(screen.getByText("Descartar cambios")).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
 });
