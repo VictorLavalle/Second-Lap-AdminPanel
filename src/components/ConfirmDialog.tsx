@@ -41,7 +41,7 @@ export function ConfirmDialog({
     <dialog
       ref={dialogRef}
       onCancel={onClose}
-      className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-0 backdrop:bg-black/40"
+      className="m-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-0 backdrop:bg-black/40"
       aria-labelledby="confirm-title"
     >
       <div className="flex max-w-sm flex-col gap-4 p-6">

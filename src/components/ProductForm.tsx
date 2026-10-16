@@ -63,14 +63,16 @@ export function ProductForm({
 
   const [discardOpen, setDiscardOpen] = useState(false);
 
-  // In create mode, consider the form dirty if any field was touched or images
-  // were picked. Used to confirm before discarding in-progress work.
+  // A pristine baseline to compare against: empty in create, the product's
+  // values in edit. The form is dirty when the user has changed something
+  // (any field differs) or, in create, picked images.
+  const baseline = useMemo(() => initialValues(product), [product]);
   const isDirty =
-    !isEdit &&
-    (Object.values(values).some((value) => value.trim() !== "") ||
-      selectedFiles.length > 0);
+    (Object.keys(baseline) as Array<keyof ProductFormValues>).some(
+      (key) => values[key] !== baseline[key],
+    ) || selectedFiles.length > 0;
 
-  // Warn on tab close/refresh while there is unsaved create-in-progress work.
+  // Warn on tab close/refresh while there are unsaved changes.
   useEffect(() => {
     if (!isDirty || submitting) {
       return;
@@ -321,8 +323,12 @@ export function ProductForm({
 
       <ConfirmDialog
         open={discardOpen}
-        title="Descartar producto"
-        description="Tienes cambios sin guardar. ¿Seguro que quieres descartar la creación de este producto?"
+        title={isEdit ? "Descartar cambios" : "Descartar producto"}
+        description={
+          isEdit
+            ? "Tienes cambios sin guardar. ¿Seguro que quieres descartarlos?"
+            : "Tienes cambios sin guardar. ¿Seguro que quieres descartar la creación de este producto?"
+        }
         confirmLabel="Descartar"
         onConfirm={confirmDiscard}
         onClose={() => setDiscardOpen(false)}
