@@ -71,7 +71,7 @@ describe("OrdersView states", () => {
   it("shows empty", () => {
     currentState = { status: "ready", data: [] };
     render(<OrdersView />);
-    expect(screen.getByText("No hay pedidos todavía.")).toBeInTheDocument();
+    expect(screen.getByText("No hay pedidos para este filtro.")).toBeInTheDocument();
   });
 
   it("shows error with retry", () => {

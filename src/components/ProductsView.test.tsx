@@ -55,6 +55,21 @@ describe("ProductsView", () => {
     expect(screen.getByText("Camisa")).toBeInTheDocument();
   });
 
+  it("renders status and sort controls", () => {
+    currentState = { status: "ready", data: [sampleProduct()] };
+    render(<ProductsView />);
+    expect(
+      screen.getByRole("option", { name: "Todos los estados" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Ordenar por")).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Más recientes" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Precio: menor a mayor" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows the error state and retries on click", () => {
     currentState = { status: "error", message: "Falló" };
     render(<ProductsView />);
