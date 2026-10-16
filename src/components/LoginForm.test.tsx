@@ -34,6 +34,15 @@ function fillAndSubmit(user = "admin", pass = "secret") {
 }
 
 describe("LoginForm", () => {
+  it("submits via POST so credentials never fall back to a GET URL", () => {
+    const { container } = render(<LoginForm />);
+    const form = container.querySelector("form");
+    expect(form).not.toBeNull();
+    // A native submit (before hydration) must not serialize the password into
+    // the URL. method=post is the guard; GET is the dangerous default.
+    expect(form?.getAttribute("method")).toBe("post");
+  });
+
   it("redirects to /productos on success", async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
     render(<LoginForm />);

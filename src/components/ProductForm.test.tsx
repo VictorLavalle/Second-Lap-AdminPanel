@@ -72,6 +72,12 @@ function fillValid() {
 }
 
 describe("ProductForm (create)", () => {
+  it("submits via POST so fields never fall back to a GET URL", () => {
+    const { container } = render(<ProductForm categories={categories} />);
+    const form = container.querySelector("form");
+    expect(form?.getAttribute("method")).toBe("post");
+  });
+
   it("shows validation errors and does not submit when invalid", () => {
     render(<ProductForm categories={categories} />);
 
