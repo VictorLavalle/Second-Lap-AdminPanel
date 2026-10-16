@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Product } from "@/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatPrice } from "@/lib/format";
+import { imageUrl } from "@/lib/imageUrl";
 
 const conditionLabels: Record<Product["condition"], string> = {
   "Como nuevo": "Como nuevo",
@@ -22,7 +23,7 @@ function Thumbnail({ product }: Readonly<{ product: Product }>) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- backend-hosted image; CSP img-src allows the backend origin
     <img
-      src={firstImage}
+      src={imageUrl(firstImage)}
       alt={`Miniatura de ${product.name}`}
       width={48}
       height={48}
