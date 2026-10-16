@@ -6,8 +6,12 @@
   --color-ink-soft: #4a4a4a;
   --color-canvas: #f7f4f1;
   --color-surface: #ffffff;
-  --color-accent: #e9835a;
-  --color-accent-soft: #f4845f;
+  /* Accent darkened from the storefront's #e9835a to meet WCAG 2 AA (4.5:1):
+     white text on this accent (action buttons) and accent-colored link text on
+     the light canvas both now pass. accent-soft is the hover shade, kept lighter
+     for feedback but still >=4.5:1 with white. */
+  --color-accent: #a84f24;
+  --color-accent-soft: #b85a2a;
   --color-price: #b84a26;
   --color-gold: #946b3c;
   --color-text: #1a1a1a;
