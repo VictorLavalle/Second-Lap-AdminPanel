@@ -25,6 +25,7 @@ export default defineConfig({
         "src/data/**", // datos semilla / configuración
         "src/app/layout.tsx", // shell raíz: fuentes, metadata
         "src/app/page.tsx", // landing estático sin lógica
+        "src/app/login/page.tsx", // página estática que solo compone el form
       ],
       thresholds: {
         statements: 90,
