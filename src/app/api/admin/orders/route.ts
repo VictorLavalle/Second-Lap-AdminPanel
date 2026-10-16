@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiClient } from "@/lib/apiClient";
 import { resolveAdminCredentials } from "@/lib/adminCredentials";
+import { parseOrderListParams } from "@/lib/listParams";
 import {
   errorResponse,
   unauthorizedResponse,
@@ -9,7 +10,8 @@ import {
 
 export const runtime = "nodejs";
 
-// Lists orders (backend returns them sorted most-recent-first).
+// Lists orders. Status/sort filters are forwarded to the backend; with no
+// params the backend returns them most-recent-first.
 export async function GET(request: Request): Promise<NextResponse> {
   const resolved = await resolveAdminCredentials(request.headers.get("cookie"));
   if (!resolved) {
@@ -17,7 +19,10 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const orders = await apiClient.listOrders(resolved.credentials);
+    const orders = await apiClient.listOrders(
+      resolved.credentials,
+      parseOrderListParams(request.url),
+    );
     return withRefreshedCookies(
       NextResponse.json(orders),
       resolved.refreshedCookies,
