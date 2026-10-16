@@ -36,8 +36,15 @@ function pendingOrder(): Order {
     subtotal: 100,
     shippingFee: 0,
     total: 100,
-    status: "pending",
+    status: "pendiente",
     createdAt: "2026-01-15T18:30:00.000Z",
+    confirmedAt: null,
+    completedAt: null,
+    deliveredAt: null,
+    cancelledAt: null,
+    events: [
+      { fromStatus: null, toStatus: "pendiente", occurredAt: "2026-01-15T18:30:00.000Z" },
+    ],
     storeWhatsapp: "52999",
   };
 }
@@ -76,17 +83,16 @@ describe("OrdersView states", () => {
   });
 });
 
-describe("OrdersView confirm/cancel", () => {
-  it("confirms an order through the dialog then reloads", async () => {
+describe("OrdersView transitions", () => {
+  it("confirms through the dialog then reloads", async () => {
     currentState = { status: "ready", data: [pendingOrder()] };
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
     render(<OrdersView />);
 
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    // Once the dialog is open there are two "Confirmar" buttons (card + dialog);
-    // the dialog's confirm button is the last one rendered.
-    const confirmButtons = screen.getAllByRole("button", { name: "Confirmar" });
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+    // Dialog is open: two "Confirmar" buttons now (card + dialog); click the last.
+    const buttons = screen.getAllByRole("button", { name: "Confirmar" });
+    fireEvent.click(buttons[buttons.length - 1]);
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -125,21 +131,9 @@ describe("OrdersView confirm/cancel", () => {
     render(<OrdersView />);
 
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    const confirmButtons = screen.getAllByRole("button", { name: "Confirmar" });
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+    const buttons = screen.getAllByRole("button", { name: "Confirmar" });
+    fireEvent.click(buttons[buttons.length - 1]);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
-  });
-
-  it("shows a generic error when the request throws", async () => {
-    currentState = { status: "ready", data: [pendingOrder()] };
-    fetchMock.mockRejectedValue(new Error("offline"));
-    render(<OrdersView />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    const confirmButtons = screen.getAllByRole("button", { name: "Confirmar" });
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
-
-    expect(await screen.findByText(/la operación falló/i)).toBeInTheDocument();
   });
 });

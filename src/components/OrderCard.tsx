@@ -1,26 +1,26 @@
+import Link from "next/link";
 import type { Order } from "@/types";
 import { formatPrice } from "@/lib/format";
 import {
   DELIVERY_METHOD_LABELS,
   PAYMENT_METHOD_LABELS,
+  allowedActions,
   buildWhatsappLink,
   formatOrderDate,
-  isPending,
+  type OrderActionKind,
 } from "@/lib/orders";
 import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 
 export function OrderCard({
   order,
   busy,
-  onConfirm,
-  onCancel,
+  onAction,
 }: Readonly<{
   order: Order;
   busy: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
+  onAction: (kind: OrderActionKind) => void;
 }>) {
-  const actionable = isPending(order.status);
+  const actions = allowedActions(order.status);
 
   return (
     <article className="flex flex-col gap-4 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
@@ -104,23 +104,28 @@ export function OrderCard({
         ) : null}
       </section>
 
-      <footer className="flex gap-3">
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={!actionable || busy}
-          className="rounded-md bg-[var(--color-available)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+      <footer className="flex flex-wrap items-center gap-3">
+        {actions.map((action) => (
+          <button
+            key={action.kind}
+            type="button"
+            onClick={() => onAction(action.kind)}
+            disabled={busy}
+            className={
+              action.danger
+                ? "rounded-md border border-[var(--color-danger)] px-4 py-2 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/5 disabled:cursor-not-allowed disabled:opacity-50"
+                : "rounded-md bg-[var(--color-available)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            }
+          >
+            {action.label}
+          </button>
+        ))}
+        <Link
+          href={`/pedidos/${order.id}`}
+          className="ml-auto text-sm font-medium text-[var(--color-accent)] hover:underline"
         >
-          Confirmar
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={!actionable || busy}
-          className="rounded-md border border-[var(--color-danger)] px-4 py-2 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/5 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Cancelar
-        </button>
+          Ver detalle
+        </Link>
       </footer>
     </article>
   );

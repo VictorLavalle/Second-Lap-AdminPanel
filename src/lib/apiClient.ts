@@ -167,8 +167,26 @@ export const apiClient = {
     return request<Order[]>("/admin/orders", { credentials });
   },
 
+  getOrderById(credentials: string, id: string): Promise<Order> {
+    return request<Order>(`/admin/orders/${id}`, { credentials });
+  },
+
   confirmOrder(credentials: string, id: string): Promise<Order> {
     return request<Order>(`/admin/orders/${id}/confirm`, {
+      method: "PATCH",
+      credentials,
+    });
+  },
+
+  completeOrder(credentials: string, id: string): Promise<Order> {
+    return request<Order>(`/admin/orders/${id}/complete`, {
+      method: "PATCH",
+      credentials,
+    });
+  },
+
+  deliverOrder(credentials: string, id: string): Promise<Order> {
+    return request<Order>(`/admin/orders/${id}/deliver`, {
       method: "PATCH",
       credentials,
     });

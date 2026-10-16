@@ -2,11 +2,15 @@ import type { OrderStatus } from "@/types";
 import { ORDER_STATUS_LABELS } from "@/lib/orders";
 
 const statusStyles: Record<OrderStatus, string> = {
-  pending:
+  pendiente:
     "bg-[var(--color-surface)] border border-[var(--color-reserved)] text-[var(--color-reserved)]",
-  confirmed:
+  confirmado:
+    "bg-[var(--color-surface)] border border-[var(--color-gold)] text-[var(--color-gold)]",
+  completado:
     "bg-[var(--color-surface)] border border-[var(--color-available)] text-[var(--color-available)]",
-  cancelled:
+  entregado:
+    "bg-[var(--color-available)] border border-[var(--color-available)] text-white",
+  cancelado:
     "bg-[var(--color-surface)] border border-[var(--color-line)] text-[var(--color-muted)]",
 };
 

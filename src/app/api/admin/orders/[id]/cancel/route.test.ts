@@ -20,8 +20,16 @@ const cancelled: Order = {
   subtotal: 0,
   shippingFee: 0,
   total: 0,
-  status: "cancelled",
+  status: "cancelado",
   createdAt: "2026-01-15T18:30:00.000Z",
+  confirmedAt: null,
+  completedAt: null,
+  deliveredAt: null,
+  cancelledAt: "2026-01-15T19:00:00.000Z",
+  events: [
+    { fromStatus: null, toStatus: "pendiente", occurredAt: "2026-01-15T18:30:00.000Z" },
+    { fromStatus: "pendiente", toStatus: "cancelado", occurredAt: "2026-01-15T19:00:00.000Z" },
+  ],
   storeWhatsapp: "52999",
 };
 

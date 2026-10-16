@@ -241,4 +241,34 @@ describe("apiClient admin methods", () => {
     const [url] = fetchMock.mock.calls[0];
     expect(url).toContain(`/products/${sampleProduct.id}`);
   });
+
+  it("gets a single order by id with the Basic header", async () => {
+    fetchMock.mockResolvedValue(jsonOk({ id: "o1" }));
+
+    await apiClient.getOrderById(credentials, "o1");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/admin/orders/o1");
+    expect(init.headers.Authorization).toBe(`Basic ${credentials}`);
+  });
+
+  it("completes an order via PATCH", async () => {
+    fetchMock.mockResolvedValue(jsonOk({ id: "o1" }));
+
+    await apiClient.completeOrder(credentials, "o1");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/admin/orders/o1/complete");
+    expect(init.method).toBe("PATCH");
+  });
+
+  it("delivers an order via PATCH", async () => {
+    fetchMock.mockResolvedValue(jsonOk({ id: "o1" }));
+
+    await apiClient.deliverOrder(credentials, "o1");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/admin/orders/o1/deliver");
+    expect(init.method).toBe("PATCH");
+  });
 });
