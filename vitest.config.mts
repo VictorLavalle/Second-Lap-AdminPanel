@@ -29,6 +29,7 @@ export default defineConfig({
         "src/app/productos/page.tsx", // página estática que solo compone header + vista
         "src/app/productos/nuevo/page.tsx", // página estática que solo compone header + vista
         "src/app/productos/[id]/editar/page.tsx", // página estática que solo compone header + vista
+        "src/app/pedidos/page.tsx", // página estática que solo compone header + vista
       ],
       thresholds: {
         statements: 90,
