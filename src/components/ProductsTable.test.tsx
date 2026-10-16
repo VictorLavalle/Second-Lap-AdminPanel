@@ -35,6 +35,17 @@ describe("ProductsTable", () => {
     expect(screen.getByText(/450/)).toBeInTheDocument();
   });
 
+  it("links the product name to its read-only detail view", () => {
+    render(<ProductsTable products={[product()]} />);
+    expect(
+      screen.getByRole("link", { name: "Camisa de lino" }),
+    ).toHaveAttribute("href", "/productos/1");
+    expect(screen.getByRole("link", { name: "Editar" })).toHaveAttribute(
+      "href",
+      "/productos/1/editar",
+    );
+  });
+
   it("renders an image with meaningful alt when the product has one", () => {
     render(
       <ProductsTable

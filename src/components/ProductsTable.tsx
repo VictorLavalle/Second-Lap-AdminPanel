@@ -68,13 +68,18 @@ export function ProductsTable({
         {products.map((product) => (
           <tr
             key={product.id}
-            className="border-b border-[var(--color-line)] align-middle"
+            className="border-b border-[var(--color-line)] align-middle transition hover:bg-[var(--color-canvas)]"
           >
             <td className="py-3 pr-4">
               <Thumbnail product={product} />
             </td>
             <td className="py-3 pr-4 font-medium text-[var(--color-ink)]">
-              {product.name}
+              <Link
+                href={`/productos/${product.id}`}
+                className="hover:text-[var(--color-accent)] hover:underline"
+              >
+                {product.name}
+              </Link>
             </td>
             <td className="py-3 pr-4 text-[var(--color-price)]">
               {formatPrice(product.price)}
