@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent, type SyntheticEvent } from "react";
+import { useMemo, useState, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/types";
 import { sanitizeMultiline, sanitizeText } from "@/lib/sanitize";
 import { formatPriceWithCents } from "@/lib/format";
-import { ACCEPTED_IMAGE_TYPES, validateImages } from "@/lib/imageUpload";
+import { validateImages } from "@/lib/imageUpload";
+import { ImagePicker } from "@/components/ImagePicker";
 import {
   PRODUCT_CONDITIONS,
   toProductRequest,
@@ -43,7 +44,6 @@ export function ProductForm({
   const [submitting, setSubmitting] = useState(false);
   // Create mode lets the user pick images up front; they are uploaded right
   // after the product is created (the upload endpoint needs the new product id).
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
 
@@ -65,18 +65,6 @@ export function ProductForm({
     value: string,
   ): void {
     setValues((previous) => ({ ...previous, [key]: value }));
-  }
-
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    setImageError(null);
-    const files = Array.from(event.target.files ?? []);
-    const error = validateImages(files);
-    if (error) {
-      setImageError(error);
-      setSelectedFiles([]);
-      return;
-    }
-    setSelectedFiles(files);
   }
 
   // Uploads the pre-selected images to a freshly created product. Returns true
@@ -259,30 +247,16 @@ export function ProductForm({
       />
 
       {!isEdit ? (
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="images" className="text-sm font-medium">
-            Imágenes (opcional, JPEG/PNG/WebP, máx. 5 MB)
-          </label>
-          <input
-            id="images"
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept={ACCEPTED_IMAGE_TYPES.join(",")}
-            onChange={handleFileChange}
-            className="text-sm"
-          />
-          {imageError ? (
-            <p role="alert" className="text-xs text-[var(--color-danger)]">
-              {imageError}
-            </p>
-          ) : null}
-          {selectedFiles.length > 0 ? (
-            <p className="text-xs text-[var(--color-muted)]">
-              {selectedFiles.length} imagen(es) se subirán al crear el producto.
-            </p>
-          ) : null}
-        </div>
+        <ImagePicker
+          files={selectedFiles}
+          error={imageError}
+          disabled={submitting}
+          onChange={(files) => {
+            const error = validateImages(files);
+            setImageError(error);
+            setSelectedFiles(error ? [] : files);
+          }}
+        />
       ) : null}
 
       {submitError ? (
