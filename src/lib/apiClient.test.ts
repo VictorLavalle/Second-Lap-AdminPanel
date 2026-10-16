@@ -25,6 +25,8 @@ const sampleProduct: Product = {
   color: null,
   measurements: null,
   status: "disponible",
+  createdAt: "2026-01-01T00:00:00Z",
+  modifiedDate: null,
 };
 
 const fetchMock = vi.fn();
@@ -231,6 +233,41 @@ describe("apiClient admin methods", () => {
     fetchMock.mockResolvedValue(jsonOk([sampleProduct]));
 
     await expect(apiClient.listProducts()).resolves.toHaveLength(1);
+  });
+
+  it("serializes status and sort query params when listing products", async () => {
+    fetchMock.mockResolvedValue(jsonOk([sampleProduct]));
+
+    await apiClient.listProducts({ status: "disponible", sort: "createdAt,desc" });
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain("/products?");
+    expect(url).toContain("status=disponible");
+    expect(url).toContain("sort=createdAt%2Cdesc");
+  });
+
+  it("serializes status and sort query params when listing orders", async () => {
+    fetchMock.mockResolvedValue(jsonOk([]));
+
+    await apiClient.listOrders(credentials, {
+      status: "confirmado",
+      sort: "total,asc",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/admin/orders?");
+    expect(url).toContain("status=confirmado");
+    expect(url).toContain("sort=total%2Casc");
+    expect(init.headers.Authorization).toBe(`Basic ${credentials}`);
+  });
+
+  it("omits the query string when no list params are given", async () => {
+    fetchMock.mockResolvedValue(jsonOk([sampleProduct]));
+
+    await apiClient.listProducts();
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).not.toContain("?");
   });
 
   it("gets a single product by id", async () => {

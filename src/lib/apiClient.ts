@@ -3,6 +3,7 @@ import type {
   AdminProductRequest,
   Category,
   Order,
+  OrderStatus,
   Product,
   ProductStatus,
 } from "@/types";
@@ -54,6 +55,36 @@ interface RequestOptions {
   formData?: FormData;
 }
 
+// Sort is the backend's "property,direction" form (e.g. "createdAt,desc"). The
+// backend whitelists properties and silently falls back to its default for
+// anything unknown, so no client-side validation is needed here.
+export interface ProductListParams {
+  status?: ProductStatus;
+  sort?: string;
+}
+
+export interface OrderListParams {
+  status?: OrderStatus;
+  sort?: string;
+}
+
+function buildListQuery(
+  params?: ProductListParams | OrderListParams,
+): string {
+  if (!params) {
+    return "";
+  }
+  const query = new URLSearchParams();
+  if (params.status) {
+    query.set("status", params.status);
+  }
+  if (params.sort) {
+    query.set("sort", params.sort);
+  }
+  const serialized = query.toString();
+  return serialized ? `?${serialized}` : "";
+}
+
 async function request<T>(
   path: string,
   options: RequestOptions = {},
@@ -101,8 +132,8 @@ export const apiClient = {
     return request<Category[]>("/categories");
   },
 
-  listProducts(): Promise<Product[]> {
-    return request<Product[]>("/products");
+  listProducts(params?: ProductListParams): Promise<Product[]> {
+    return request<Product[]>(`/products${buildListQuery(params)}`);
   },
 
   getProduct(id: string): Promise<Product> {
@@ -163,8 +194,13 @@ export const apiClient = {
     });
   },
 
-  listOrders(credentials: string): Promise<Order[]> {
-    return request<Order[]>("/admin/orders", { credentials });
+  listOrders(
+    credentials: string,
+    params?: OrderListParams,
+  ): Promise<Order[]> {
+    return request<Order[]>(`/admin/orders${buildListQuery(params)}`, {
+      credentials,
+    });
   },
 
   getOrderById(credentials: string, id: string): Promise<Order> {

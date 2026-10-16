@@ -36,6 +36,10 @@ export interface Product {
   color: string | null;
   measurements: string | null;
   status: ProductStatus;
+  // ISO-8601. createdAt is set by the DB on insert; modifiedDate is null until
+  // the product is first updated.
+  createdAt: string;
+  modifiedDate: string | null;
 }
 
 // Payload for POST /admin/products and PUT /admin/products/{id}.
