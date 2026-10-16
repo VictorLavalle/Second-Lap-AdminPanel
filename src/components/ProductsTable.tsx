@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Product } from "@/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatPrice } from "@/lib/format";
@@ -57,6 +58,9 @@ export function ProductsTable({
           <th scope="col" className="py-3 font-medium">
             Estado
           </th>
+          <th scope="col" className="py-3 font-medium">
+            <span className="sr-only">Acciones</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -78,6 +82,14 @@ export function ProductsTable({
             <td className="py-3 pr-4">{conditionLabels[product.condition]}</td>
             <td className="py-3">
               <StatusBadge status={product.status} />
+            </td>
+            <td className="py-3 text-right">
+              <Link
+                href={`/productos/${product.id}/editar`}
+                className="text-sm font-medium text-[var(--color-accent)] hover:underline"
+              >
+                Editar
+              </Link>
             </td>
           </tr>
         ))}

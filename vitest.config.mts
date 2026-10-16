@@ -27,6 +27,8 @@ export default defineConfig({
         "src/app/page.tsx", // solo redirect a /productos
         "src/app/login/page.tsx", // página estática que solo compone el form
         "src/app/productos/page.tsx", // página estática que solo compone header + vista
+        "src/app/productos/nuevo/page.tsx", // página estática que solo compone header + vista
+        "src/app/productos/[id]/editar/page.tsx", // página estática que solo compone header + vista
       ],
       thresholds: {
         statements: 90,
