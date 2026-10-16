@@ -41,14 +41,20 @@ afterEach(() => {
 });
 
 describe("GET /api/admin/products", () => {
-  it("returns products for an authenticated admin", async () => {
-    vi.spyOn(apiClient, "listProducts").mockResolvedValue([sampleProduct]);
+  it("returns a page of products for an authenticated admin", async () => {
+    vi.spyOn(apiClient, "listProductsAdmin").mockResolvedValue({
+      content: [sampleProduct],
+      totalElements: 1,
+      totalPages: 1,
+      number: 0,
+      size: 25,
+    });
 
     const response = await GET(await requestWithSession());
 
     expect(response.status).toBe(200);
-    const body = (await response.json()) as Product[];
-    expect(body).toHaveLength(1);
+    const body = (await response.json()) as { content: Product[] };
+    expect(body.content).toHaveLength(1);
   });
 
   it("returns 401 and clears cookies without a valid session", async () => {
@@ -59,7 +65,7 @@ describe("GET /api/admin/products", () => {
   });
 
   it("maps a backend failure through errorResponse", async () => {
-    vi.spyOn(apiClient, "listProducts").mockRejectedValue(
+    vi.spyOn(apiClient, "listProductsAdmin").mockRejectedValue(
       new ApiRequestError(502, null),
     );
 

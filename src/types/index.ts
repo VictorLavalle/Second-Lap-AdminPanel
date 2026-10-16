@@ -115,6 +115,17 @@ export interface AdminMe {
   username: string;
 }
 
+// Pagination envelope returned by the admin list endpoints, mirroring the
+// backend's PageResponse<T>: { content, totalElements, totalPages, number,
+// size }. `number` is the 0-based current page.
+export interface Page<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
 // Error envelope returned by the backend for 4xx/5xx with a body.
 export interface ApiError {
   code: string;
