@@ -68,3 +68,25 @@ export async function PUT(
     return errorResponse(error);
   }
 }
+
+export async function DELETE(
+  request: Request,
+  context: RouteContext,
+): Promise<NextResponse> {
+  const resolved = await resolveAdminCredentials(request.headers.get("cookie"));
+  if (!resolved) {
+    return unauthorizedResponse();
+  }
+
+  const { id } = await context.params;
+
+  try {
+    await apiClient.deleteProduct(resolved.credentials, id);
+    return withRefreshedCookies(
+      new NextResponse(null, { status: 204 }),
+      resolved.refreshedCookies,
+    );
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
