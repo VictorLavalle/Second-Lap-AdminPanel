@@ -17,9 +17,9 @@
 // This function is the single place to change for that.
 export function clientKey(request: Request): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    const hops = forwardedFor.split(",");
-    return hops[hops.length - 1].trim();
+  const lastHop = forwardedFor?.split(",").at(-1)?.trim();
+  if (lastHop) {
+    return lastHop;
   }
   return request.headers.get("x-real-ip") ?? "unknown";
 }

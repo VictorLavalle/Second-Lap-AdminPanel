@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { sanitizeText } from "@/lib/sanitize";
 
 const GENERIC_ERROR = "Usuario o contraseña incorrectos.";
@@ -26,7 +26,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setSubmitting(true);

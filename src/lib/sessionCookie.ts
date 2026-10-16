@@ -17,19 +17,32 @@ export interface SessionPayload {
 function toBase64Url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+    binary += String.fromCodePoint(byte);
   }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return stripTrailing(
+    btoa(binary).replaceAll("+", "-").replaceAll("/", "_"),
+    "=",
+  );
 }
 
 function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
-  const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = value.replaceAll("-", "+").replaceAll("_", "/");
   const binary = atob(padded);
   const bytes = new Uint8Array(new ArrayBuffer(binary.length));
   for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
+    bytes[i] = binary.codePointAt(i) ?? 0;
   }
   return bytes;
+}
+
+// Removes trailing occurrences of a single-character suffix without a regex
+// (avoids an anchored-quantifier pattern that static analysis flags as ReDoS).
+function stripTrailing(value: string, suffix: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === suffix) {
+    end -= 1;
+  }
+  return value.slice(0, end);
 }
 
 function loadSigningSecret(): string {

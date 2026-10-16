@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, Product } from "@/types";
 import { sanitizeMultiline, sanitizeText } from "@/lib/sanitize";
@@ -53,7 +53,7 @@ export function ProductForm({
     setValues((previous) => ({ ...previous, [key]: value }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitError(null);
 
