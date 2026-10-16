@@ -1,37 +1,39 @@
-// Single source of truth for the panel's security headers. Kept as pure logic
-// (no Next imports) so it can be unit-tested and reused by next.config.ts.
+// Single source of truth for the panel's security headers. Pure logic (no Next
+// imports) so it can be unit-tested and reused by both next.config.ts (static
+// headers) and the middleware (per-request CSP with a nonce).
 
 export interface SecurityHeader {
   key: string;
   value: string;
 }
 
-export interface SecurityHeadersOptions {
+export interface CspOptions {
   isDev: boolean;
   backendOrigin: string;
+  // Per-request nonce used in production to authorize framework scripts without
+  // 'unsafe-inline'. Omitted in dev, where HMR requires unsafe-inline/eval.
+  nonce?: string;
 }
 
 // Strict CSP: deny by default, then open only what the admin panel needs.
 //
-// KNOWN DEBT: script-src keeps 'unsafe-inline' because Next.js injects an inline
-// bootstrap/runtime script we do not control — this is a framework limitation,
-// not a lax choice. Hardening path is to adopt per-request nonces once wired
-// through the app shell. In dev, Turbopack HMR additionally needs 'unsafe-eval'
-// and a websocket origin. Tailwind injects styles at runtime, hence
-// 'unsafe-inline' for style-src. Product images come from the backend, so
-// img-src allows the backend origin.
+// Production uses a per-request nonce plus 'strict-dynamic', which lets the
+// nonced Next bootstrap script load the rest of the chunks while still
+// forbidding arbitrary inline scripts — so 'unsafe-inline' is dropped for
+// scripts. Development keeps 'unsafe-inline'/'unsafe-eval' because Turbopack HMR
+// injects eval'd inline scripts a nonce cannot cover. Tailwind injects styles
+// at runtime, hence 'unsafe-inline' remains on style-src. Product images come
+// from the backend, so img-src allows the backend origin.
 export function buildContentSecurityPolicy({
   isDev,
   backendOrigin,
-}: SecurityHeadersOptions): string {
-  const scriptSrc = isDev
-    ? "'self' 'unsafe-inline' 'unsafe-eval'"
-    : "'self' 'unsafe-inline'";
+  nonce,
+}: CspOptions): string {
   const connectSrc = isDev ? `'self' ws: ${backendOrigin}` : "'self'";
 
   return [
     "default-src 'none'",
-    `script-src ${scriptSrc}`,
+    `script-src ${scriptSrcDirective(isDev, nonce)}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob: ${backendOrigin}`,
     "font-src 'self' data:",
@@ -45,11 +47,24 @@ export function buildContentSecurityPolicy({
     .concat(";");
 }
 
-export function buildSecurityHeaders(
-  options: SecurityHeadersOptions,
-): SecurityHeader[] {
+function scriptSrcDirective(isDev: boolean, nonce?: string): string {
+  if (isDev) {
+    // HMR injects eval'd inline scripts a nonce cannot cover.
+    return "'self' 'unsafe-inline' 'unsafe-eval'";
+  }
+  if (nonce) {
+    return `'self' 'nonce-${nonce}' 'strict-dynamic'`;
+  }
+  // Production fallback when no nonce is available (should not happen once the
+  // middleware supplies one): keep the previous, looser behavior.
+  return "'self' 'unsafe-inline'";
+}
+
+// Non-CSP hardening headers that are identical on every response. The CSP is set
+// per-request in the middleware (it carries a nonce), so it is NOT included here
+// to avoid emitting two conflicting Content-Security-Policy headers.
+export function buildStaticSecurityHeaders(): SecurityHeader[] {
   return [
-    { key: "Content-Security-Policy", value: buildContentSecurityPolicy(options) },
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "X-Frame-Options", value: "DENY" },
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

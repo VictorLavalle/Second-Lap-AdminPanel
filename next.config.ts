@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
-import { buildSecurityHeaders } from "./src/lib/securityHeaders";
+import { buildStaticSecurityHeaders } from "./src/lib/securityHeaders";
 
-const securityHeaders = buildSecurityHeaders({
-  isDev: process.env.NODE_ENV !== "production",
-  backendOrigin: process.env.BACKEND_PUBLIC_ORIGIN ?? "http://localhost:8080",
-});
+// Static hardening headers apply to every response. The Content-Security-Policy
+// is NOT set here: it carries a per-request nonce and is emitted by the
+// middleware instead (see src/middleware.ts).
+const securityHeaders = buildStaticSecurityHeaders();
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
