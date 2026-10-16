@@ -23,8 +23,15 @@ export function OrderCard({
   const actions = allowedActions(order.status);
 
   return (
-    <article className="flex flex-col gap-4 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
-      <header className="flex flex-wrap items-center justify-between gap-2">
+    <article className="relative flex flex-col gap-4 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-5 transition hover:border-[var(--color-accent)]">
+      {/* Overlay link makes the whole card navigate to the detail view. Inner
+          interactive elements sit above it (relative z-10) so they still work. */}
+      <Link
+        href={`/pedidos/${order.id}`}
+        className="absolute inset-0 z-0 rounded-lg"
+        aria-label={`Ver detalle del pedido de ${order.customer.name}`}
+      />
+      <header className="relative z-10 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <OrderStatusBadge status={order.status} />
           <time className="text-sm text-[var(--color-muted)]">
@@ -38,7 +45,7 @@ export function OrderCard({
           )}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm font-medium text-[var(--color-accent)] hover:underline"
+          className="relative z-10 text-sm font-medium text-[var(--color-accent)] hover:underline"
         >
           WhatsApp
         </a>
@@ -104,7 +111,7 @@ export function OrderCard({
         ) : null}
       </section>
 
-      <footer className="flex flex-wrap items-center gap-3">
+      <footer className="relative z-10 flex flex-wrap items-center gap-3">
         {actions.map((action) => (
           <button
             key={action.kind}
@@ -120,12 +127,9 @@ export function OrderCard({
             {action.label}
           </button>
         ))}
-        <Link
-          href={`/pedidos/${order.id}`}
-          className="ml-auto text-sm font-medium text-[var(--color-accent)] hover:underline"
-        >
-          Ver detalle
-        </Link>
+        <span className="ml-auto text-sm font-medium text-[var(--color-accent)]">
+          Ver detalle →
+        </span>
       </footer>
     </article>
   );

@@ -53,10 +53,9 @@ describe("OrderCard", () => {
       "href",
       expect.stringContaining("wa.me/529996384026"),
     );
-    expect(screen.getByRole("link", { name: "Ver detalle" })).toHaveAttribute(
-      "href",
-      "/pedidos/o1",
-    );
+    expect(
+      screen.getByRole("link", { name: /ver detalle del pedido/i }),
+    ).toHaveAttribute("href", "/pedidos/o1");
   });
 
   it("renders confirm and cancel for pendiente and fires onAction", () => {
