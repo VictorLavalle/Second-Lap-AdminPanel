@@ -26,6 +26,8 @@ export function ProductManagePanel({ product }: Readonly<{ product: Product }>) 
   const router = useRouter();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>(product.images);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [status, setStatus] = useState<ProductStatus>(product.status);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export function ProductManagePanel({ product }: Readonly<{ product: Product }>) 
     }
     setBusy(true);
     setActionError(null);
+    setUploadSuccess(false);
     try {
       const body = new FormData();
       for (const file of selectedFiles) {
@@ -54,7 +57,12 @@ export function ProductManagePanel({ product }: Readonly<{ product: Product }>) 
         setActionError(GENERIC_ERROR);
         return;
       }
+      // The backend returns the updated product; use its images so the gallery
+      // re-renders immediately without a manual reload.
+      const updated = (await response.json()) as Product;
+      setImages(updated.images);
       setSelectedFiles([]);
+      setUploadSuccess(true);
       router.refresh();
     } catch {
       setActionError(GENERIC_ERROR);
@@ -126,9 +134,9 @@ export function ProductManagePanel({ product }: Readonly<{ product: Product }>) 
         <h2 className="text-lg font-semibold text-[var(--color-ink)]">
           Imágenes
         </h2>
-        {product.images.length > 0 ? (
+        {images.length > 0 ? (
           <ul className="flex flex-wrap gap-3">
-            {product.images.map((image) => (
+            {images.map((image) => (
               <li key={image}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- backend-hosted image; CSP img-src allows the backend origin */}
                 <img
@@ -156,18 +164,27 @@ export function ProductManagePanel({ product }: Readonly<{ product: Product }>) 
             const error = validateImages(files);
             setImageError(error);
             setSelectedFiles(error ? [] : files);
+            setUploadSuccess(false);
           }}
         />
 
-        <div>
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleUpload}
             disabled={busy || selectedFiles.length === 0}
             className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-soft)] disabled:opacity-60"
           >
-            Subir imágenes
+            {busy ? "Subiendo…" : "Subir imágenes"}
           </button>
+          {uploadSuccess ? (
+            <p
+              role="status"
+              className="text-sm font-medium text-[var(--color-available)]"
+            >
+              Imágenes subidas ✓
+            </p>
+          ) : null}
         </div>
       </div>
 
