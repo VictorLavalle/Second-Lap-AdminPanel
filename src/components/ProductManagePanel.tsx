@@ -8,6 +8,7 @@ import {
   validateImages,
 } from "@/lib/imageUpload";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { imageUrl } from "@/lib/imageUrl";
 
 const PRODUCT_STATUSES: ProductStatus[] = [
   "disponible",
@@ -154,7 +155,7 @@ export function ProductManagePanel({ product }: Readonly<{ product: Product }>) 
               <li key={image}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- backend-hosted image; CSP img-src allows the backend origin */}
                 <img
-                  src={image}
+                  src={imageUrl(image)}
                   alt={`Imagen de ${product.name}`}
                   width={96}
                   height={96}
