@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   // Dev-only: allow HMR/dev resources to be served to this machine over the
   // local network (e.g. testing on a phone at http://192.168.1.x:3000). Next 16
   // blocks cross-origin dev requests by default. No effect in production.
-  allowedDevOrigins: ["192.168.1.236", "192.168.1.*"],
+  allowedDevOrigins: ["192.168.1.66", "192.168.1.*"],
   turbopack: {
     rules: {
       "*.css": {
