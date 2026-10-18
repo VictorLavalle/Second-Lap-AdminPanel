@@ -42,18 +42,31 @@ const COMPLETE: OrderAction = { kind: "complete", label: "Completar", danger: fa
 const DELIVER: OrderAction = { kind: "deliver", label: "Entregar", danger: false };
 const CANCEL: OrderAction = { kind: "cancel", label: "Cancelar", danger: true };
 
-// Allowed transitions per current status. Terminal states map to no actions.
-// Driven by a map, not chained conditionals, so it stays extensible.
+// Allowed transitions per current status, mirroring the backend workflow
+// (OrderStatus.ALLOWED): forward flow + cancel from any non-terminal state.
+// Terminal states map to no actions.
 const TRANSITIONS: Record<OrderStatus, OrderAction[]> = {
   pendiente: [CONFIRM, CANCEL],
-  confirmado: [COMPLETE],
-  completado: [DELIVER],
+  confirmado: [COMPLETE, CANCEL],
+  completado: [DELIVER, CANCEL],
   entregado: [],
   cancelado: [],
 };
 
 export function allowedActions(status: OrderStatus): OrderAction[] {
   return TRANSITIONS[status];
+}
+
+// The forward (non-cancel) transition available from a status, or null in a
+// terminal state. Drives the status dropdown's single "advance" option.
+export function forwardAction(status: OrderStatus): OrderAction | null {
+  return TRANSITIONS[status].find((action) => !action.danger) ?? null;
+}
+
+// Whether the order can be cancelled from its current status (any non-terminal
+// state per the workflow). Drives the separate "Cancelar pedido" button.
+export function canCancel(status: OrderStatus): boolean {
+  return TRANSITIONS[status].some((action) => action.kind === "cancel");
 }
 
 export function hasActions(status: OrderStatus): boolean {

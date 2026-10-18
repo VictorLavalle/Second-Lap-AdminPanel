@@ -83,17 +83,6 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
             {formatOrderDate(order.createdAt)}
           </time>
         </div>
-        <a
-          href={buildWhatsappLink(
-            order.storeWhatsapp,
-            `Hola ${order.customer.name}, sobre tu pedido en Second Lap`,
-          )}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-medium text-[var(--color-accent)] hover:underline"
-        >
-          WhatsApp
-        </a>
       </header>
 
       <p className="text-xs text-[var(--color-muted)]">Pedido {order.id}</p>
@@ -137,6 +126,17 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
         {order.customer.comments ? (
           <p className="text-[var(--color-muted)]">{order.customer.comments}</p>
         ) : null}
+        <a
+          href={buildWhatsappLink(
+            order.storeWhatsapp,
+            `Hola ${order.customer.name}, sobre tu pedido en Second Lap`,
+          )}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-flex w-fit items-center rounded-md border border-[var(--color-accent)] px-3 py-1.5 font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/5"
+        >
+          Contactar por WhatsApp
+        </a>
       </section>
 
       <section className="grid gap-1 text-sm">

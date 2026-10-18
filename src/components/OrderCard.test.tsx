@@ -41,7 +41,7 @@ function order(overrides: Partial<Order> = {}): Order {
 }
 
 describe("OrderCard", () => {
-  it("renders customer, items, totals, a wa.me link and a detail link", () => {
+  it("renders customer, items, totals and a detail link (no WhatsApp on the card)", () => {
     render(<OrderCard order={order()} busy={false} onAction={vi.fn()} />);
 
     expect(screen.getByText("Ana")).toBeInTheDocument();
@@ -49,50 +49,56 @@ describe("OrderCard", () => {
     expect(screen.getByText(/Camisa/)).toBeInTheDocument();
     expect(screen.getByText("$150")).toBeInTheDocument();
 
-    expect(screen.getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
-      "href",
-      expect.stringContaining("wa.me/529996384026"),
-    );
+    // WhatsApp moved to the detail view's Cliente section; not on the card.
+    expect(screen.queryByRole("link", { name: /whatsapp/i })).toBeNull();
     expect(
       screen.getByRole("link", { name: /ver detalle del pedido/i }),
     ).toHaveAttribute("href", "/pedidos/o1");
   });
 
-  it("renders confirm and cancel for pendiente and fires onAction", () => {
+  it("advances status via the dropdown and cancels via the header button", () => {
     const onAction = vi.fn();
     render(<OrderCard order={order()} busy={false} onAction={onAction} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
-
+    // Status dropdown offers the forward transition (pendiente -> confirmado).
+    fireEvent.change(screen.getByRole("combobox", { name: "Cambiar estado" }), {
+      target: { value: "confirm" },
+    });
     expect(onAction).toHaveBeenCalledWith("confirm");
+
+    // Cancel is a separate header button.
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar pedido" }));
     expect(onAction).toHaveBeenCalledWith("cancel");
   });
 
-  it("renders only Completar for confirmado", () => {
+  it("offers Completar in the dropdown and allows cancel for confirmado", () => {
     render(
       <OrderCard order={order({ status: "confirmado" })} busy={false} onAction={vi.fn()} />,
     );
-
-    expect(screen.getByRole("button", { name: "Completar" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Confirmar" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Cancelar" })).toBeNull();
+    expect(
+      screen.getByRole("option", { name: "Completado" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Cancelar pedido" }),
+    ).toBeInTheDocument();
   });
 
-  it("renders only Entregar for completado", () => {
+  it("offers Entregar in the dropdown for completado", () => {
     render(
       <OrderCard order={order({ status: "completado" })} busy={false} onAction={vi.fn()} />,
     );
-
-    expect(screen.getByRole("button", { name: "Entregar" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Entregado" })).toBeInTheDocument();
   });
 
-  it("renders no action buttons for terminal states", () => {
+  it("disables the dropdown and hides cancel for terminal states", () => {
     const terminal: OrderStatus[] = ["entregado", "cancelado"];
     for (const status of terminal) {
       cleanup();
       render(<OrderCard order={order({ status })} busy={false} onAction={vi.fn()} />);
-      expect(screen.queryByRole("button")).toBeNull();
+      expect(screen.getByRole("combobox", { name: "Cambiar estado" })).toBeDisabled();
+      expect(
+        screen.queryByRole("button", { name: "Cancelar pedido" }),
+      ).toBeNull();
     }
   });
 
