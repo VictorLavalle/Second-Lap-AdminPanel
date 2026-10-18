@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -36,8 +37,12 @@ vi.mock("@/lib/useAdminPolling", () => ({
   },
 }));
 
+let lastPath = "";
 vi.mock("@/lib/useAdminResource", () => ({
-  useAdminResource: () => ({ state: currentState, reload }),
+  useAdminResource: (path: string) => {
+    lastPath = path;
+    return { state: currentState, reload };
+  },
 }));
 
 import { OrdersView } from "./OrdersView";
@@ -80,6 +85,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   pollTick = null;
   pollPaused = false;
+  lastPath = "";
 });
 
 describe("OrdersView states", () => {
@@ -92,7 +98,7 @@ describe("OrdersView states", () => {
   it("shows empty", () => {
     currentState = { status: "ready", data: pageOf([]) };
     render(<OrdersView />);
-    expect(screen.getByText("No hay pedidos para este filtro.")).toBeInTheDocument();
+    expect(screen.getByText("No hay pedidos que coincidan con tu búsqueda.")).toBeInTheDocument();
   });
 
   it("shows error with retry", () => {
@@ -195,5 +201,61 @@ describe("OrdersView live refresh", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
 
     expect(pollPaused).toBe(true);
+  });
+});
+
+describe("OrdersView search & filters", () => {
+  beforeEach(() => {
+    currentState = { status: "ready", data: pageOf([pendingOrder()]) };
+  });
+
+  it("debounces the search box into a single request with q", () => {
+    vi.useFakeTimers();
+    try {
+      render(<OrdersView />);
+      const search = screen.getByRole("searchbox");
+
+      fireEvent.change(search, { target: { value: "065" } });
+      fireEvent.change(search, { target: { value: "065B" } });
+      fireEvent.change(search, { target: { value: "065BF31A" } });
+
+      // Before the debounce elapses, the path has no q yet.
+      expect(lastPath).not.toContain("q=");
+
+      act(() => {
+        vi.advanceTimersByTime(350);
+      });
+      expect(lastPath).toContain("q=065BF31A");
+      expect(lastPath).toContain("page=0");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("sends status and deliveryMethod filters and resets to page 0", () => {
+    render(<OrdersView />);
+    const selects = screen.getAllByRole("combobox");
+    // Order of selects: [status, deliveryMethod, sort]
+    fireEvent.change(selects[0], { target: { value: "confirmado" } });
+    expect(lastPath).toContain("status=confirmado");
+    expect(lastPath).toContain("page=0");
+
+    fireEvent.change(selects[1], { target: { value: "domicilio" } });
+    expect(lastPath).toContain("deliveryMethod=domicilio");
+  });
+
+  it("passes the chosen sort", () => {
+    render(<OrdersView />);
+    const selects = screen.getAllByRole("combobox");
+    fireEvent.change(selects[2], { target: { value: "total,desc" } });
+    expect(lastPath).toContain("sort=total%2Cdesc");
+  });
+
+  it("shows the search-aware empty message", () => {
+    currentState = { status: "ready", data: pageOf([]) };
+    render(<OrdersView />);
+    expect(
+      screen.getByText("No hay pedidos que coincidan con tu búsqueda."),
+    ).toBeInTheDocument();
   });
 });

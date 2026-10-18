@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import type { Order, OrderStatus, Page } from "@/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { DeliveryMethod, Order, OrderStatus, Page } from "@/types";
 import { useAdminResource } from "@/lib/useAdminResource";
 import { useAdminPolling } from "@/lib/useAdminPolling";
 import { ordersSignature } from "@/lib/listSignature";
@@ -13,6 +13,7 @@ import { Pagination, type PageSize } from "@/components/Pagination";
 import { RefreshNotice } from "@/components/RefreshNotice";
 
 type StatusFilter = OrderStatus | "all";
+type DeliveryFilter = DeliveryMethod | "all";
 
 const STATUS_OPTIONS: ReadonlyArray<{ value: StatusFilter; label: string }> = [
   { value: "all", label: "Todos los estados" },
@@ -23,6 +24,14 @@ const STATUS_OPTIONS: ReadonlyArray<{ value: StatusFilter; label: string }> = [
   { value: "cancelado", label: "Cancelado" },
 ];
 
+const DELIVERY_OPTIONS: ReadonlyArray<{ value: DeliveryFilter; label: string }> =
+  [
+    { value: "all", label: "Todos los métodos" },
+    { value: "recoger", label: "Recoger en tienda" },
+    { value: "domicilio", label: "Entrega a domicilio" },
+    { value: "paqueteria", label: "Paquetería" },
+  ];
+
 const SORT_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: "createdAt,desc", label: "Más recientes" },
   { value: "createdAt,asc", label: "Más antiguos" },
@@ -31,46 +40,86 @@ const SORT_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
 ];
 
 function Controls({
+  query,
   status,
+  deliveryMethod,
   sort,
+  onQuery,
   onStatus,
+  onDeliveryMethod,
   onSort,
 }: Readonly<{
+  query: string;
   status: StatusFilter;
+  deliveryMethod: DeliveryFilter;
   sort: string;
+  onQuery: (value: string) => void;
   onStatus: (value: StatusFilter) => void;
+  onDeliveryMethod: (value: DeliveryFilter) => void;
   onSort: (value: string) => void;
 }>) {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-[var(--color-ink)]">Estado</span>
-        <select
-          value={status}
-          onChange={(event) => onStatus(event.target.value as StatusFilter)}
+        <span className="font-medium text-[var(--color-ink)]">Buscar</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => onQuery(event.target.value)}
+          placeholder="Buscar por nº de pedido o cliente"
           className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 outline-none focus:border-[var(--color-accent)]"
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-[var(--color-ink)]">Ordenar por</span>
-        <select
-          value={sort}
-          onChange={(event) => onSort(event.target.value)}
-          className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 outline-none focus:border-[var(--color-accent)]"
-        >
-          {SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="flex flex-wrap gap-3">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-[var(--color-ink)]">Estado</span>
+          <select
+            value={status}
+            onChange={(event) => onStatus(event.target.value as StatusFilter)}
+            className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 outline-none focus:border-[var(--color-accent)]"
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-[var(--color-ink)]">
+            Método de entrega
+          </span>
+          <select
+            value={deliveryMethod}
+            onChange={(event) =>
+              onDeliveryMethod(event.target.value as DeliveryFilter)
+            }
+            className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 outline-none focus:border-[var(--color-accent)]"
+          >
+            {DELIVERY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-[var(--color-ink)]">
+            Ordenar por
+          </span>
+          <select
+            value={sort}
+            onChange={(event) => onSort(event.target.value)}
+            className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 outline-none focus:border-[var(--color-accent)]"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
     </div>
   );
 }
@@ -88,27 +137,53 @@ function Loading() {
 
 export function OrdersView() {
   const [status, setStatus] = useState<StatusFilter>("all");
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryFilter>("all");
+  const [query, setQuery] = useState("");
+  const [qDebounced, setQDebounced] = useState("");
   const [sort, setSort] = useState<string>("createdAt,desc");
   const [page, setPage] = useState(0);
   const [size, setSize] = useState<PageSize>(25);
 
+  // Debounce the search box so we hit the backend once the user pauses typing,
+  // not on every keystroke. The fetch depends on qDebounced, not query.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQDebounced(query.trim());
+      setPage(0);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const path = useMemo(() => {
-    const query = new URLSearchParams({
+    const params = new URLSearchParams({
       sort,
       page: String(page),
       size: String(size),
     });
     if (status !== "all") {
-      query.set("status", status);
+      params.set("status", status);
     }
-    return `/api/admin/orders?${query.toString()}`;
-  }, [status, sort, page, size]);
+    if (deliveryMethod !== "all") {
+      params.set("deliveryMethod", deliveryMethod);
+    }
+    if (qDebounced) {
+      params.set("q", qDebounced);
+    }
+    return `/api/admin/orders?${params.toString()}`;
+  }, [status, deliveryMethod, qDebounced, sort, page, size]);
 
   const { state, reload } = useAdminResource<Page<Order>>(path);
   const action = useOrderAction(reload);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const isNeutral = status === "all" && page === 0;
+  // Live refresh is only safe in a fully neutral view: no filter, no search,
+  // first page. Any active filter/search would have its view moved under the
+  // user by a silent swap, so those fall back to the "hay cambios" notice.
+  const isNeutral =
+    status === "all" &&
+    deliveryMethod === "all" &&
+    qDebounced === "" &&
+    page === 0;
   // Pause polling while the seller is mid-action (a transition in flight or the
   // confirm dialog open) so we never refresh the list under them.
   const paused = action.busy || action.pending !== null;
@@ -149,6 +224,11 @@ export function OrdersView() {
     setPage(0);
     setHasChanges(false);
   }
+  function changeDeliveryMethod(next: DeliveryFilter) {
+    setDeliveryMethod(next);
+    setPage(0);
+    setHasChanges(false);
+  }
   function changeSort(next: string) {
     setSort(next);
     setPage(0);
@@ -162,9 +242,13 @@ export function OrdersView() {
 
   const controls = (
     <Controls
+      query={query}
       status={status}
+      deliveryMethod={deliveryMethod}
       sort={sort}
+      onQuery={setQuery}
       onStatus={changeStatus}
+      onDeliveryMethod={changeDeliveryMethod}
       onSort={changeSort}
     />
   );
@@ -215,7 +299,7 @@ export function OrdersView() {
 
       {result.content.length === 0 ? (
         <p className="rounded-md border border-dashed border-[var(--color-line)] px-4 py-10 text-center text-[var(--color-muted)]">
-          No hay pedidos para este filtro.
+          No hay pedidos que coincidan con tu búsqueda.
         </p>
       ) : (
         result.content.map((order) => (
