@@ -39,6 +39,3 @@ next-env.d.ts
 # SonarQube scanner output
 .scannerwork/
 
-# Kiro agent/design docs (local)
-.kiro
-.kiro/*
