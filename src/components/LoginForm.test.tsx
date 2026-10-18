@@ -43,6 +43,26 @@ describe("LoginForm", () => {
     expect(form?.getAttribute("method")).toBe("post");
   });
 
+  it("submits when Enter is pressed in a field (not only via the button)", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
+    render(<LoginForm />);
+
+    fireEvent.change(screen.getByLabelText("Usuario"), {
+      target: { value: "admin" },
+    });
+    const password = screen.getByLabelText("Contraseña");
+    fireEvent.change(password, { target: { value: "secret" } });
+    fireEvent.keyDown(password, { key: "Enter" });
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/admin/login",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/productos"));
+  });
+
   it("redirects to /productos on success", async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
     render(<LoginForm />);

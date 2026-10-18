@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type SyntheticEvent } from "react";
+import { useState, type KeyboardEvent, type SyntheticEvent } from "react";
 import { sanitizeText } from "@/lib/sanitize";
 
 const GENERIC_ERROR = "Usuario o contraseña incorrectos.";
@@ -25,6 +25,16 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Pressing Enter in a field submits the form. We handle it explicitly rather
+  // than relying only on the browser's implicit submit, which was observed not
+  // to fire here, forcing users to Tab to the button first.
+  function handleKeyDown(event: KeyboardEvent<HTMLFormElement>) {
+    if (event.key === "Enter" && !submitting) {
+      event.preventDefault();
+      event.currentTarget.requestSubmit();
+    }
+  }
 
   async function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,6 +70,7 @@ export function LoginForm() {
     // triggers it because handleSubmit calls preventDefault.
     <form
       onSubmit={handleSubmit}
+      onKeyDown={handleKeyDown}
       method="post"
       className="flex flex-col gap-4"
       noValidate
