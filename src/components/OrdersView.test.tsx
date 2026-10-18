@@ -116,10 +116,11 @@ describe("OrdersView transitions", () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
     render(<OrdersView />);
 
+    // Advance via the status dropdown (pendiente -> confirmado), then confirm.
+    fireEvent.change(screen.getByRole("combobox", { name: "Cambiar estado" }), {
+      target: { value: "confirm" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    // Dialog is open: two "Confirmar" buttons now (card + dialog); click the last.
-    const buttons = screen.getAllByRole("button", { name: "Confirmar" });
-    fireEvent.click(buttons[buttons.length - 1]);
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -143,8 +144,10 @@ describe("OrdersView transitions", () => {
     );
     render(<OrdersView />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
     fireEvent.click(screen.getByRole("button", { name: "Cancelar pedido" }));
+    // Dialog confirm button for cancel reads "Cancelar pedido" too; click the last.
+    const buttons = screen.getAllByRole("button", { name: "Cancelar pedido" });
+    fireEvent.click(buttons[buttons.length - 1]);
 
     expect(
       await screen.findByText("El pedido no está pendiente"),
@@ -162,9 +165,10 @@ describe("OrdersView transitions", () => {
     );
     render(<OrdersView />);
 
+    fireEvent.change(screen.getByRole("combobox", { name: "Cambiar estado" }), {
+      target: { value: "confirm" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    const buttons = screen.getAllByRole("button", { name: "Confirmar" });
-    fireEvent.click(buttons[buttons.length - 1]);
 
     expect(await screen.findByText(/Ref: corr-abc/)).toBeInTheDocument();
   });
@@ -174,9 +178,10 @@ describe("OrdersView transitions", () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
     render(<OrdersView />);
 
+    fireEvent.change(screen.getByRole("combobox", { name: "Cambiar estado" }), {
+      target: { value: "confirm" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    const buttons = screen.getAllByRole("button", { name: "Confirmar" });
-    fireEvent.click(buttons[buttons.length - 1]);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
   });
@@ -198,7 +203,9 @@ describe("OrdersView live refresh", () => {
     expect(pollPaused).toBe(false);
 
     // Staging an action opens the confirm dialog -> polling must pause.
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Cambiar estado" }), {
+      target: { value: "confirm" },
+    });
 
     expect(pollPaused).toBe(true);
   });

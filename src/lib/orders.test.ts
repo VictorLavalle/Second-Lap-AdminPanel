@@ -4,8 +4,10 @@ import {
   actionDialogCopy,
   allowedActions,
   buildWhatsappLink,
+  canCancel,
   eventActorLabel,
   eventLabel,
+  forwardAction,
   formatOrderDate,
   hasActions,
 } from "./orders";
@@ -29,15 +31,17 @@ describe("allowedActions", () => {
     ]);
   });
 
-  it("offers complete for confirmado", () => {
+  it("offers complete and cancel for confirmado", () => {
     expect(allowedActions("confirmado").map((a) => a.kind)).toEqual([
       "complete",
+      "cancel",
     ]);
   });
 
-  it("offers deliver for completado", () => {
+  it("offers deliver and cancel for completado", () => {
     expect(allowedActions("completado").map((a) => a.kind)).toEqual([
       "deliver",
+      "cancel",
     ]);
   });
 
@@ -138,5 +142,31 @@ describe("OrderStatus type coverage", () => {
     for (const status of all) {
       expect(ORDER_STATUS_LABELS[status]).toBeTruthy();
     }
+  });
+});
+
+describe("forwardAction", () => {
+  it("returns the single non-cancel advance per status", () => {
+    expect(forwardAction("pendiente")?.kind).toBe("confirm");
+    expect(forwardAction("confirmado")?.kind).toBe("complete");
+    expect(forwardAction("completado")?.kind).toBe("deliver");
+  });
+
+  it("returns null in terminal states", () => {
+    expect(forwardAction("entregado")).toBeNull();
+    expect(forwardAction("cancelado")).toBeNull();
+  });
+});
+
+describe("canCancel", () => {
+  it("is true for every non-terminal state", () => {
+    expect(canCancel("pendiente")).toBe(true);
+    expect(canCancel("confirmado")).toBe(true);
+    expect(canCancel("completado")).toBe(true);
+  });
+
+  it("is false for terminal states", () => {
+    expect(canCancel("entregado")).toBe(false);
+    expect(canCancel("cancelado")).toBe(false);
   });
 });
