@@ -2,7 +2,7 @@
 
 Entry point for any agent (or human) working this repo. Read this first; it lets
 you be productive without reading the whole codebase. Deep detail lives in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+[`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ## What this is
 

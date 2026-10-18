@@ -1,7 +1,7 @@
 # Architecture — Second Lap Admin Panel
 
 Detailed reference for the admin panel's design. For the quick start, commands,
-and conventions, read [`../AGENTS.md`](../AGENTS.md) first.
+and conventions, read [`AGENTS.md`](AGENTS.md) first.
 
 ## 1. Purpose & ecosystem
 

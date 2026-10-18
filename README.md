@@ -85,10 +85,12 @@ src/
 
 ## Documentation
 
-- **[AGENTS.md](AGENTS.md)** — quick orientation and working conventions.
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — detailed architecture: the
+- **[.kiro/AGENTS.md](.kiro/AGENTS.md)** — quick orientation and working conventions.
+- **[.kiro/ARCHITECTURE.md](.kiro/ARCHITECTURE.md)** — detailed architecture: the
   BFF model, authentication and session handling, security posture, the data
   layer, features, and the full BFF route map.
+- **.kiro/** also holds operational notes (secrets & deployment, CSP, SonarQube,
+  dev LAN login).
 
 ## Contributing
 
