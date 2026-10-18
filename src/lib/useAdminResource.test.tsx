@@ -20,7 +20,7 @@ function Probe() {
       <span data-testid="message">
         {state.status === "error" ? state.message : ""}
       </span>
-      <button type="button" onClick={reload}>
+      <button type="button" onClick={() => reload()}>
         reload
       </button>
     </div>

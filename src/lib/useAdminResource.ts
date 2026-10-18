@@ -15,49 +15,63 @@ const GENERIC_ERROR = "No se pudieron cargar los datos. Inténtalo de nuevo.";
 // session is gone, so it redirects to /login rather than surfacing an error.
 export function useAdminResource<T>(path: string): {
   state: ResourceState<T>;
-  reload: () => void;
+  reload: (options?: { silent?: boolean }) => void;
 } {
   const router = useRouter();
   const [state, setState] = useState<ResourceState<T>>({ status: "loading" });
   const activeRef = useRef(true);
 
   // Performs the fetch and updates state in async continuations only (never
-  // synchronously), so it is safe to invoke from an effect.
-  const load = useCallback(async () => {
-    try {
-      const response = await fetch(path, { credentials: "same-origin" });
-      if (!activeRef.current) {
-        return;
+  // synchronously), so it is safe to invoke from an effect. In silent mode
+  // (used by background polling) it does not surface loading/error states: it
+  // only swaps in fresh data on success, leaving the current view untouched on
+  // a transient failure so the table never flickers or blanks out.
+  const load = useCallback(
+    async (silent = false) => {
+      try {
+        const response = await fetch(path, { credentials: "same-origin" });
+        if (!activeRef.current) {
+          return;
+        }
+        if (response.status === 401) {
+          router.replace("/login");
+          return;
+        }
+        if (!response.ok) {
+          if (silent) {
+            return;
+          }
+          // Unexpected (5xx) responses carry a correlation ref; append it so
+          // the user can quote it when reporting the failure. 4xx have no ref.
+          const body = await response.json().catch(() => null);
+          setState({
+            status: "error",
+            message: withErrorRef(GENERIC_ERROR, readErrorRef(body)),
+          });
+          return;
+        }
+        const data = (await response.json()) as T;
+        if (activeRef.current) {
+          setState({ status: "ready", data });
+        }
+      } catch {
+        if (!silent && activeRef.current) {
+          setState({ status: "error", message: GENERIC_ERROR });
+        }
       }
-      if (response.status === 401) {
-        router.replace("/login");
-        return;
-      }
-      if (!response.ok) {
-        // Unexpected (5xx) responses carry a correlation ref; append it so the
-        // user can quote it when reporting the failure. 4xx have no ref.
-        const body = await response.json().catch(() => null);
-        setState({
-          status: "error",
-          message: withErrorRef(GENERIC_ERROR, readErrorRef(body)),
-        });
-        return;
-      }
-      const data = (await response.json()) as T;
-      if (activeRef.current) {
-        setState({ status: "ready", data });
-      }
-    } catch {
-      if (activeRef.current) {
-        setState({ status: "error", message: GENERIC_ERROR });
-      }
-    }
-  }, [path, router]);
+    },
+    [path, router],
+  );
 
-  const reload = useCallback(() => {
-    setState({ status: "loading" });
-    void load();
-  }, [load]);
+  const reload = useCallback(
+    (options?: { silent?: boolean }) => {
+      if (!options?.silent) {
+        setState({ status: "loading" });
+      }
+      void load(options?.silent);
+    },
+    [load],
+  );
 
   useEffect(() => {
     activeRef.current = true;

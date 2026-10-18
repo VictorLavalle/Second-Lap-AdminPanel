@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Page, Product, ProductStatus } from "@/types";
 import { useAdminResource } from "@/lib/useAdminResource";
+import { useAdminPolling } from "@/lib/useAdminPolling";
+import { productsSignature } from "@/lib/listSignature";
 import { ProductsTable } from "@/components/ProductsTable";
 import { Pagination, type PageSize } from "@/components/Pagination";
+import { RefreshNotice } from "@/components/RefreshNotice";
 
 function LoadingState() {
   return (
@@ -126,20 +129,62 @@ export function ProductsView() {
   }, [status, sort, page, size]);
 
   const { state, reload } = useAdminResource<Page<Product>>(path);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Live refresh is only "safe" (won't move the view under the user) when the
+  // table is in a neutral view: no status filter and on the first page. With a
+  // filter or on a later page, a silent swap would lose their place, so instead
+  // we surface a discreet "hay cambios · actualizar" notice.
+  const isNeutral = status === "all" && page === 0;
+
+  const currentSignature =
+    state.status === "ready" ? productsSignature(state.data.content) : "";
+
+  const onTick = useCallback(() => {
+    if (isNeutral) {
+      reload({ silent: true });
+      return;
+    }
+    // Non-neutral: peek for changes without disturbing the current view.
+    void (async () => {
+      try {
+        const response = await fetch(path, { credentials: "same-origin" });
+        if (!response.ok) {
+          return;
+        }
+        const page = (await response.json()) as Page<Product>;
+        if (productsSignature(page.content) !== currentSignature) {
+          setHasChanges(true);
+        }
+      } catch {
+        // Ignore transient poll failures; the next tick retries.
+      }
+    })();
+  }, [isNeutral, reload, path, currentSignature]);
+
+  useAdminPolling(onTick);
+
+  function applyChanges() {
+    setHasChanges(false);
+    reload();
+  }
 
   // Changing a filter/sort/size resets to the first page so the user never
   // lands on an out-of-range page.
   function changeStatus(next: StatusFilter) {
     setStatus(next);
     setPage(0);
+    setHasChanges(false);
   }
   function changeSort(next: string) {
     setSort(next);
     setPage(0);
+    setHasChanges(false);
   }
   function changeSize(next: PageSize) {
     setSize(next);
     setPage(0);
+    setHasChanges(false);
   }
 
   const controls = (
@@ -172,6 +217,7 @@ export function ProductsView() {
   return (
     <div className="flex flex-col gap-4">
       {controls}
+      {hasChanges ? <RefreshNotice onRefresh={applyChanges} /> : null}
       {result.content.length === 0 ? (
         <EmptyState />
       ) : (
@@ -182,7 +228,10 @@ export function ProductsView() {
         totalPages={result.totalPages}
         totalElements={result.totalElements}
         size={size}
-        onPage={setPage}
+        onPage={(next) => {
+          setPage(next);
+          setHasChanges(false);
+        }}
         onSize={changeSize}
       />
     </div>
