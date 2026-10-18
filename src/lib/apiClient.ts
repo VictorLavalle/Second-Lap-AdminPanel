@@ -2,6 +2,7 @@ import type {
   AdminMe,
   AdminProductRequest,
   Category,
+  DeliveryMethod,
   Order,
   OrderStatus,
   Page,
@@ -69,6 +70,10 @@ export interface ProductListParams {
 
 export interface OrderListParams {
   status?: OrderStatus;
+  deliveryMethod?: DeliveryMethod;
+  // Free-text search: order number (UUID prefix) or customer name. The backend
+  // tolerates no-match/garbage (returns 200 with empty content).
+  q?: string;
   sort?: string;
   page?: number;
   size?: number;
@@ -83,6 +88,12 @@ function buildListQuery(
   const query = new URLSearchParams();
   if (params.status) {
     query.set("status", params.status);
+  }
+  if ("deliveryMethod" in params && params.deliveryMethod) {
+    query.set("deliveryMethod", params.deliveryMethod);
+  }
+  if ("q" in params && params.q) {
+    query.set("q", params.q);
   }
   if (params.sort) {
     query.set("sort", params.sort);

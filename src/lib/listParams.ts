@@ -2,7 +2,7 @@ import type {
   OrderListParams,
   ProductListParams,
 } from "@/lib/apiClient";
-import type { OrderStatus, ProductStatus } from "@/types";
+import type { DeliveryMethod, OrderStatus, ProductStatus } from "@/types";
 
 // Allowed sort properties mirror the backend whitelists. The backend already
 // falls back to its default for unknown values, but validating here keeps the
@@ -21,6 +21,12 @@ const ORDER_STATUSES = new Set<OrderStatus>([
   "completado",
   "entregado",
   "cancelado",
+]);
+
+const DELIVERY_METHODS = new Set<DeliveryMethod>([
+  "recoger",
+  "domicilio",
+  "paqueteria",
 ]);
 
 function parseSort(raw: string | null, allowedProps: Set<string>): string | undefined {
@@ -71,10 +77,17 @@ export function parseProductListParams(url: string): ProductListParams {
 export function parseOrderListParams(url: string): OrderListParams {
   const params = new URL(url).searchParams;
   const status = params.get("status");
+  const deliveryMethod = params.get("deliveryMethod");
+  const q = params.get("q")?.trim();
   return {
     status: ORDER_STATUSES.has(status as OrderStatus)
       ? (status as OrderStatus)
       : undefined,
+    deliveryMethod: DELIVERY_METHODS.has(deliveryMethod as DeliveryMethod)
+      ? (deliveryMethod as DeliveryMethod)
+      : undefined,
+    // Free text; forwarded as-is (the backend tolerates no-match/garbage).
+    q: q ? q : undefined,
     sort: parseSort(params.get("sort"), ORDER_SORT_PROPS),
     page: parsePage(params.get("page")),
     size: parseSize(params.get("size")),

@@ -58,3 +58,21 @@ describe("pagination params", () => {
     expect(p.size).toBeUndefined();
   });
 });
+
+describe("order deliveryMethod and q", () => {
+  it("keeps a valid deliveryMethod and free-text q", () => {
+    const p = parseOrderListParams(`${base}?deliveryMethod=domicilio&q=065BF31A`);
+    expect(p.deliveryMethod).toBe("domicilio");
+    expect(p.q).toBe("065BF31A");
+  });
+
+  it("drops an invalid deliveryMethod but keeps q (even if gibberish)", () => {
+    const p = parseOrderListParams(`${base}?deliveryMethod=teleport&q=zzz%20nope`);
+    expect(p.deliveryMethod).toBeUndefined();
+    expect(p.q).toBe("zzz nope");
+  });
+
+  it("treats blank q as undefined", () => {
+    expect(parseOrderListParams(`${base}?q=%20%20`).q).toBeUndefined();
+  });
+});
