@@ -61,7 +61,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
         <p className="text-[var(--color-danger)]">{state.message}</p>
         <button
           type="button"
-          onClick={reload}
+          onClick={() => reload()}
           className="rounded-md border border-[var(--color-line)] px-4 py-2 text-sm font-medium hover:bg-[var(--color-canvas)]"
         >
           Reintentar

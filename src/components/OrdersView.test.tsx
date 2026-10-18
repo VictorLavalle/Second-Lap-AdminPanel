@@ -27,6 +27,15 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace, refresh: vi.fn() }),
 }));
 
+let pollTick: (() => void) | null = null;
+let pollPaused = false;
+vi.mock("@/lib/useAdminPolling", () => ({
+  useAdminPolling: (onTick: () => void, options?: { paused?: boolean }) => {
+    pollTick = onTick;
+    pollPaused = options?.paused ?? false;
+  },
+}));
+
 vi.mock("@/lib/useAdminResource", () => ({
   useAdminResource: () => ({ state: currentState, reload }),
 }));
@@ -69,6 +78,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  pollTick = null;
+  pollPaused = false;
 });
 
 describe("OrdersView states", () => {
@@ -162,5 +173,27 @@ describe("OrdersView transitions", () => {
     fireEvent.click(buttons[buttons.length - 1]);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+  });
+});
+
+describe("OrdersView live refresh", () => {
+  it("silently reloads on a poll tick in the neutral view", () => {
+    currentState = { status: "ready", data: pageOf([pendingOrder()]) };
+    render(<OrdersView />);
+
+    pollTick?.();
+
+    expect(reload).toHaveBeenCalledWith({ silent: true });
+  });
+
+  it("pauses polling while a confirm dialog is open (mid-action)", () => {
+    currentState = { status: "ready", data: pageOf([pendingOrder()]) };
+    render(<OrdersView />);
+    expect(pollPaused).toBe(false);
+
+    // Staging an action opens the confirm dialog -> polling must pause.
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+
+    expect(pollPaused).toBe(true);
   });
 });

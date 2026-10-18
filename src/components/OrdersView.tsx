@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Order, OrderStatus, Page } from "@/types";
 import { useAdminResource } from "@/lib/useAdminResource";
+import { useAdminPolling } from "@/lib/useAdminPolling";
+import { ordersSignature } from "@/lib/listSignature";
 import { useOrderAction } from "@/lib/useOrderAction";
 import { actionDialogCopy } from "@/lib/orders";
 import { OrderCard } from "@/components/OrderCard";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Pagination, type PageSize } from "@/components/Pagination";
+import { RefreshNotice } from "@/components/RefreshNotice";
 
 type StatusFilter = OrderStatus | "all";
 
@@ -103,18 +106,58 @@ export function OrdersView() {
 
   const { state, reload } = useAdminResource<Page<Order>>(path);
   const action = useOrderAction(reload);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const isNeutral = status === "all" && page === 0;
+  // Pause polling while the seller is mid-action (a transition in flight or the
+  // confirm dialog open) so we never refresh the list under them.
+  const paused = action.busy || action.pending !== null;
+
+  const currentSignature =
+    state.status === "ready" ? ordersSignature(state.data.content) : "";
+
+  const onTick = useCallback(() => {
+    if (isNeutral) {
+      reload({ silent: true });
+      return;
+    }
+    void (async () => {
+      try {
+        const response = await fetch(path, { credentials: "same-origin" });
+        if (!response.ok) {
+          return;
+        }
+        const page = (await response.json()) as Page<Order>;
+        if (ordersSignature(page.content) !== currentSignature) {
+          setHasChanges(true);
+        }
+      } catch {
+        // Ignore transient poll failures; the next tick retries.
+      }
+    })();
+  }, [isNeutral, reload, path, currentSignature]);
+
+  useAdminPolling(onTick, { paused });
+
+  function applyChanges() {
+    setHasChanges(false);
+    reload();
+  }
 
   function changeStatus(next: StatusFilter) {
     setStatus(next);
     setPage(0);
+    setHasChanges(false);
   }
   function changeSort(next: string) {
     setSort(next);
     setPage(0);
+    setHasChanges(false);
   }
   function changeSize(next: PageSize) {
     setSize(next);
     setPage(0);
+    setHasChanges(false);
   }
 
   const controls = (
@@ -145,7 +188,7 @@ export function OrdersView() {
           <p className="text-[var(--color-danger)]">{state.message}</p>
           <button
             type="button"
-            onClick={reload}
+            onClick={() => reload()}
             className="rounded-md border border-[var(--color-line)] px-4 py-2 text-sm font-medium hover:bg-[var(--color-canvas)]"
           >
             Reintentar
@@ -161,6 +204,8 @@ export function OrdersView() {
   return (
     <div className="flex flex-col gap-4">
       {controls}
+
+      {hasChanges ? <RefreshNotice onRefresh={applyChanges} /> : null}
 
       {action.error ? (
         <p role="alert" className="text-sm text-[var(--color-danger)]">
@@ -188,7 +233,10 @@ export function OrdersView() {
         totalPages={result.totalPages}
         totalElements={result.totalElements}
         size={size}
-        onPage={setPage}
+        onPage={(next) => {
+          setPage(next);
+          setHasChanges(false);
+        }}
         onSize={changeSize}
         busy={action.busy}
       />
